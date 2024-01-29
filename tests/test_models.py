@@ -24,24 +24,27 @@ def example_audio(tmp_path):
     wav, _ = torchaudio.load(tmp_path / "test.wav")
 
     # Add batch dimension
-    wav = wav.unsqueeze(0)
-
-    yield wav
+    yield wav.unsqueeze(0)
 
 
 def test_detector(example_audio):
-    print(example_audio.size())
-
     model = AudioSeal.load_generator("audioseal_wm_16bits")
 
-    secret_message = torch.randint(0, 2, (1, 16))
+    secret_message = torch.randint(0, 2, (1, 16), dtype=torch.int32)
     watermark = model(example_audio, message=secret_message, alpha=0.8)
 
     watermarked_audio = example_audio + watermark
 
     detector = AudioSeal.load_detector(("audioseal_detector_16bits"))
-    result, message = detector(watermarked_audio)   # noqa
+    result, message = detector.detect_watermark(watermarked_audio)   # noqa
 
-    pred_prob = torch.count_nonzero(torch.gt(result[:, 1, :], 0.5)) / result.shape[-1]
+    # Due to non-deterministic decoding, messages are not always the same as message
+    print(
+        "Matching bits in decoded and original messages: "
+        f"{torch.count_nonzero(torch.eq(message, secret_message)).item()}\n"
+    )
+    assert result > 0.7
 
-    assert pred_prob.item() > 0.7
+    # Try to detect the unwatermarked audio
+    result, message = detector.detect_watermark(example_audio)   # noqa
+    assert torch.all(message == 0)
