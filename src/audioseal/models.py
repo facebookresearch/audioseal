@@ -142,9 +142,9 @@ class AudioSealDetector(torch.nn.Module):
     Detect the watermarking from an audio signal
     Args:
         SEANetEncoderKeepDimension (_type_): _description_
-        nbits (int): The number of bits in the secret message. The watermarks (if detected)
-            will have size 2 + nbits, where the first two items indicate the possibilities
-            of a true watermarking (positive / negative scores), he rest is used to decode
+        nbits (int): The number of bits in the secret message. The result will have size 
+            of 2 + nbits, where the first two items indicate the possibilities of the 
+            audio being watermarked (positive / negative scores), he rest is used to decode
             the secret message. In 0bit watermarking (no secret message), the detector just
             returns 2 values.
     """
@@ -154,13 +154,51 @@ class AudioSealDetector(torch.nn.Module):
         encoder = SEANetEncoderKeepDimension(*args, **kwargs)
         last_layer = torch.nn.Conv1d(encoder.output_dim, 2 + nbits, 1)
         self.detector = torch.nn.Sequential(encoder, last_layer)
+        self.nbits = nbits
 
-    def decode_message(self, result: torch.Tensor): ...
+    def detect_watermark(
+        self, x: torch.Tensor, message_threshold: float = 0.5
+    ) -> Tuple[float, torch.Tensor]:
+        """
+        A convenience function that returns a probability of an audio being watermarked,
+        together with its message in n-bits (binary) format. If the audio is not watermarked,
+        the message will be random.
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        Args:
+            x: Audio signal, size batch x frames
+            message_threshold: threshold used to convert the watermark output (probability
+                of each bits being 0 or 1) into the binary n-bit message. 
+        """
+        result, message = self.forward(x)  # b x 2+nbits
+        detected = torch.count_nonzero(torch.gt(result[:, 1, :], 0.5)) / result.shape[-1]
+        detect_prob = detected.cpu().item()  # type: ignore
+        message = torch.gt(message, message_threshold).int()
+        return detect_prob, message
+
+    def decode_message(self, result: torch.Tensor) -> torch.Tensor:
+        """
+        Decode the message from the watermark result (batch x nbits x frames)
+        Args:
+            result: watermark result (batch x nbits x frames)
+        Returns:
+            The message of size batch x nbits, indicating probability of 1 for each bit
+        """
+        assert (
+            (result.dim() > 2 and result.shape[1] == self.nbits) or
+            (self.dim() == 2 and result.shape[0] == self.nbits)
+        ), f"Expect message of size [,{self.nbits}, frames] (get {result.size()})"
+        decoded_message = result.mean(dim=-1)
+        return torch.sigmoid(decoded_message)
+
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Detect the watermarks from the audio signal
+
+        Args:
+            x: Audio signal, size batch x frames
+        """
         result = self.detector(x)  # b x 2+nbits
         # hardcode softmax on 2 first units used for detection
         result[:, :2, :] = torch.softmax(result[:, :2, :], dim=1)
-
-        # TODO: Return the result and the message as a tuple
-        return result[:, :2, :], result[:, 2:, :]
+        message = self.decode_message(result[:, 2:, :])
+        return result[:, :2, :], message
