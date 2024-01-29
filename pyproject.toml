@@ -20,6 +20,7 @@ dependencies = [
   "numpy",
   "omegaconf",
   "torch>=1.13.0",
+  "torchaudio"
 ]
 
 [project.urls]
