@@ -1,0 +1,10 @@
+# For developers wanting to contribute to AudioSeal
+func_argparse
+torchaudio
+soundfile
+pytest
+mypy
+black
+isort
+flake8
+pre-commit

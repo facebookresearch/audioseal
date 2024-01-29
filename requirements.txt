@@ -1,0 +1,3 @@
+  numpy
+  omegaconf
+  torch>=1.13.0
