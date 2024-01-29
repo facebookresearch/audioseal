@@ -157,12 +157,12 @@ class AudioSealDetector(torch.nn.Module):
         self.nbits = nbits
 
     def detect_watermark(
-        self, x: torch.Tensor, message_threshold: float = 0.6
+        self, x: torch.Tensor, message_threshold: float = 0.5
     ) -> Tuple[float, torch.Tensor]:
         """
         A convenience function that returns a probability of an audio being watermarked,
         together with its message in n-bits (binary) format. If the audio is not watermarked,
-        the message will be all zeros.
+        the message will be random.
 
         Args:
             x: Audio signal, size batch x frames

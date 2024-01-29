@@ -39,6 +39,8 @@ def test_detector(example_audio):
     result, message = detector.detect_watermark(watermarked_audio)   # noqa
 
     # Due to non-deterministic decoding, messages are not always the same as message
+    print(f"\nOriginal message: {secret_message}")
+    print(f"Decoded message: {message}")
     print(
         "Matching bits in decoded and original messages: "
         f"{torch.count_nonzero(torch.eq(message, secret_message)).item()}\n"
@@ -46,5 +48,5 @@ def test_detector(example_audio):
     assert result > 0.7
 
     # Try to detect the unwatermarked audio
-    result, message = detector.detect_watermark(example_audio)   # noqa
-    assert torch.all(message == 0)
+    result, _ = detector.detect_watermark(example_audio)   # noqa
+    assert result < 0.5
