@@ -100,6 +100,12 @@ print(message)
 - The code in this repository is released under the MIT license as found in the [LICENSE file](LICENSE).
 - The models weights in this repository are released under the CC-BY-NC 4.0 license as found in the [LICENSE_weights file](LICENSE_weights).
 
+# Maintainers:
+- [Tuan Tran](https://github.com/antoine-tran)
+- [Hady Elsahar](https://github.com/hadyelsahar)
+- [Pierre Fernandez](https://github.com/pierrefdz)
+- [Robin San Roman](https://github.com/Sparker17)
+
 # Citation
 
 If you find this repository useful, please consider giving a star :star: and please cite as:
