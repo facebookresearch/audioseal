@@ -11,7 +11,7 @@ Audioseal achieves state-of-the-art detection performance of both natural and sy
 <img src="./.github/audioseal.png" alt="Schema representing the structure of Audioseal"width="800px">
 </p>
 
-# Installation :mate:
+# :mate: Installation
 
 Audioseal requires Python >=3.8, Pytorch >= 1.13.0, [omegaconf](https://omegaconf.readthedocs.io/), and numpy. To install from PyPI:
 
