@@ -19,6 +19,7 @@ classifiers=[
 dependencies = [
   "numpy",
   "omegaconf",
+  "julius",
   "torch>=1.13.0",
 ]
 
