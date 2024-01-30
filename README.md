@@ -13,7 +13,7 @@ Audioseal achieves state-of-the-art detection performance of both natural and sy
 
 # :mate: Installation
 
-AudioSeal equires Python >=3.8, Pytorch >= 1.13.0, [omegaconf](https://omegaconf.readthedocs.io/), [julius](https://pypi.org/project/julius/), and numpy. To install from PyPI:
+AudioSeal requires Python >=3.8, Pytorch >= 1.13.0, [omegaconf](https://omegaconf.readthedocs.io/), [julius](https://pypi.org/project/julius/), and numpy. To install from PyPI:
 
 ```
 pip install audioseal
