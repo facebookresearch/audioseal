@@ -3,16 +3,13 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
-
-import io
-import re
-from typing import Optional, Tuple, Union
+#
+# Accompanying code for the notebook.
+# We need to install matplotlib and jupyter notebook beforehand
 
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import torch
-import torchaudio
 
 
 def plot_waveform_and_specgram(waveform, sample_rate, title):

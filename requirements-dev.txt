@@ -2,7 +2,6 @@
 func_argparse
 torchaudio
 soundfile
-matplotlib
 pytest
 mypy
 black
