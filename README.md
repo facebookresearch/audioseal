@@ -13,7 +13,7 @@ Audioseal achieves state-of-the-art detection performance of both natural and sy
 
 # :mate: Installation
 
-Audioseal requires Python >=3.8, Pytorch >= 1.13.0, [omegaconf](https://omegaconf.readthedocs.io/), and numpy. To install from PyPI:
+AudioSeal equires Python >=3.8, Pytorch >= 1.13.0, [omegaconf](https://omegaconf.readthedocs.io/), [julius](https://pypi.org/project/julius/), and numpy. To install from PyPI:
 
 ```
 pip install audioseal
@@ -62,12 +62,25 @@ watermark = model.get_watermark(wav)
 
 watermarked_audio = wav + watermark
 
-# To detect the messages
 detector = AudioSeal.load_detector("audioseal_detector_16bits")
+
+# To detect the messages in the high-level.
+result, message = detector.detect_watermark(watermarked_audio)
+
+print(result) # result is a float number indicating the probability of the audio being watermarked,
+print(message)  # message is a binary vector of 16 bits
+
+
+# To detect the messages in the low-level.
 result, message = detector(watermarked_audio)
 
-print(result)  # print prob of watermarked class # should be > 0.5
-print(message)  # message will be an empty list if the detector detects no watermarking from the audio
+# result is a tensor of size batch x 2 x frames, indicating the probablity (positive and negative) of watermarking for each frame
+# A watermarked audio should have result[:, 1, :] > 0.5
+print(result[:, 1 , :])  
+
+# Message is a tensor of size batch x 16 x frames, indicating of the probability of the message to be 1 or 0 for each frame at each bit.
+# message will be a random tensor if the detector detects no watermarking from the audio
+print(message)  
 ```
 
 <!-- # Want to contribute?
