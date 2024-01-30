@@ -19,8 +19,8 @@ classifiers=[
 dependencies = [
   "numpy",
   "omegaconf",
-  "torch>=1.13.0"
-  ]
+  "torch>=1.13.0",
+]
 
 [project.urls]
   Source = "https://github.com/facebookresearch/audioseal"
