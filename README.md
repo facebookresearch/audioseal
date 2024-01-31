@@ -5,11 +5,14 @@
 
 We introduce AudioSeal, a method for speech localized watermarking
 , with state-of-the-art detector speed without compromising the watermarking robustness. It jointly trains a generator that embeds a watermark in the audio, and a detector that detects the watermarked fragments in longer audios, even in the presence of editing.
-Audioseal achieves state-of-the-art detection performance of both natural and synthetic speech at the sample level (1/16k second resolution), it generates limited alteration of signal quality and is robust to many types of audio editing.
+Audioseal achieves state-of-the-art detection performance of both natural and synthetic speech at the sample level (1/16k second resolution), it generates limited alteration of signal quality and is robust to many types of audio editing. 
+Audioseal is designed with a fast, single-pass detector, that significantly surpasses existing models in speed — achieving detection up to two orders of magnitude faster, making it ideal for large-scale and real-time applications. 
 
-<p align="center">
-<img src="./.github/audioseal.png" alt="Schema representing the structure of Audioseal"width="800px">
-</p>
+More details can be found in the [paper](https://arxiv.org/pdf/2401.17264.pdf)
+
+
+![fig](https://github.com/facebookresearch/audioseal/assets/1453243/5d8cd96f-47b5-4c34-a3fa-7af386ed59f2)
+
 
 # :mate: Installation
 
@@ -112,8 +115,8 @@ If you find this repository useful, please consider giving a star :star: and ple
 
 ```
 @article{sanroman2024proactive,
-  title={},
-  author={},
+  title={Proactive Detection of Voice Cloning with Localized Watermarking},
+  author={San Roman, Robin and Fernandez, Pierre and Elsahar, Hady and D´efossez, Alexandre and Furon, Teddy and Tran, Tuan},
   journal={arXiv preprint},
   year={2024}
 }
