@@ -34,10 +34,10 @@ pip install -e .
 
 We provide the checkpoints for the following models:
 
-- [AudioSeal Generator](https://dl.fbaipublicfiles.com/audioseal/audioseal_wm_16bits.pth).
+- [AudioSeal Generator](src/cards/audioseal_wm_16bits.yaml).
   It takes as input an audio signal (as a waveform), and outputs a watermark of the same size as the input, that can be added to the input to watermark it.
   Optionally, it can also take as input a secret message of 16-bits that will be encoded in the watermark.
-- [AudioSeal Detector](https://dl.fbaipublicfiles.com/audioseal/audioseal_detector_16bits.pth).
+- [AudioSeal Detector](src/cards/audioseal_detector_16bits.yaml).
   It takes as input an audio signal (as a waveform), and outputs a probability that the input contains a watermark at each sample of the audio (every 1/16k s).
   Optionally, it may also output the secret message encoded in the watermark.
 
