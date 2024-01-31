@@ -43,6 +43,8 @@ We provide the checkpoints for the following models:
 
 Note that the message is optional and has no influence on the detection output. It may be used to identify a model version for instance (up to $2**16=65536$ possible choices).
 
+**Note**: We are working to release the training code for anyone wants to build their own watermarker. Stay tuned !
+
 # :abacus: Usage
 
 Audioseal provides a simple API to watermark and detect the watermarks from an audio sample. Example usage:
@@ -81,7 +83,7 @@ result, message = detector(watermarked_audio)
 # A watermarked audio should have result[:, 1, :] > 0.5
 print(result[:, 1 , :])  
 
-# Message is a tensor of size batch x 16 x frames, indicating of the probability of the message to be 1 or 0 for each frame at each bit.
+# Message is a tensor of size batch x 16, indicating of the probability of each bit to be 1.
 # message will be a random tensor if the detector detects no watermarking from the audio
 print(message)  
 ```
