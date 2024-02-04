@@ -100,6 +100,18 @@ print(message)
 ) on which the training is based
 * [Hydra Lightning Template](https://github.com/ashleve/lightning-hydra-template) for inspiration on code organization -->
 
+# Troubleshooting
+
+- If you encounter the error `ValueError: not enough values to unpack (expected 3, got 2)`, this is because we expect a batch of audio  tensors as inputs. Add one
+dummy batch dimension to your input (e.g. `wav.unsqueeze(0)`, see [example notebook for getting started](examples/Getting_started.ipynb)).
+
+- In Windows machines, if you encounter the error `KeyError raised while resolving interpolation: "Environmen variable 'USER' not found"`: This is due to an old checkpoint
+uploaded to the model hub, which is not compatible in Windows. Try to invalidate the cache by removing the files in `C:\Users\<USER>\.cache\audioseal`
+and re-run again.
+
+- If you use torchaudio to handle your audios and encounter the error `Couldn't find appropriate backend to handle uri ...`, this is due to newer version of 
+torchaudio does not handle the default backend well. Either downgrade your torchaudio to `2.0.1` or earlier, or install `soundfile` as your audio backend.
+
 # License
 
 - The code in this repository is released under the MIT license as found in the [LICENSE file](LICENSE).
