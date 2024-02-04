@@ -13,7 +13,14 @@ import warnings
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torch.nn.utils import spectral_norm, weight_norm
+from torch.nn.utils import spectral_norm
+
+try:
+    from torch.nn.utils.parametrizations import weight_norm
+except ImportError:
+    # Old Pytorch
+    from torch.nn.utils import weight_norm
+
 
 CONV_NORMALIZATIONS = frozenset(
     ["none", "weight_norm", "spectral_norm", "time_group_norm"]

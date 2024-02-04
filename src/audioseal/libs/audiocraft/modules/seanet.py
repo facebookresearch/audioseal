@@ -12,8 +12,11 @@ import typing as tp
 import numpy as np
 import torch.nn as nn
 
-from audiocraft.modules.conv import StreamableConv1d, StreamableConvTranspose1d
-from audiocraft.modules.lstm import StreamableLSTM
+from audioseal.libs.audiocraft.modules.conv import (
+    StreamableConv1d,
+    StreamableConvTranspose1d,
+)
+from audioseal.libs.audiocraft.modules.lstm import StreamableLSTM
 
 
 class SEANetResnetBlock(nn.Module):

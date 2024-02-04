@@ -9,7 +9,7 @@ from typing import Optional, Tuple
 
 import torch
 
-from audiocraft.modules.seanet import SEANetEncoder
+from audioseal.libs.audiocraft.modules.seanet import SEANetEncoder
 
 
 class MsgProcessor(torch.nn.Module):

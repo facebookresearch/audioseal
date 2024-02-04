@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from torch import device, dtype
 from typing_extensions import TypeAlias
 
-import audiocraft
+from audioseal.libs import audiocraft
 from audioseal.models import AudioSealDetector, AudioSealWM, MsgProcessor
 
 Device: TypeAlias = device
