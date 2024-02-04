@@ -90,7 +90,7 @@ def load_model_checkpoint(
 
 
 def load_local_model_config(model_card: str) -> Optional[DictConfig]:
-    config_file = Path(__file__).parent.parent / "cards" / (model_card + ".yaml")
+    config_file = Path(__file__).parent / "cards" / (model_card + ".yaml")
     if Path(config_file).is_file():
         return cast(DictConfig, OmegaConf.load(config_file.resolve()))
     else:
