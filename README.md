@@ -79,7 +79,7 @@ print(message)  # message is a binary vector of 16 bits
 # To detect the messages in the low-level.
 result, message = detector(watermarked_audio)
 
-# result is a tensor of size batch x 2 x frames, indicating the probablity (positive and negative) of watermarking for each frame
+# result is a tensor of size batch x 2 x frames, indicating the probability (positive and negative) of watermarking for each frame
 # A watermarked audio should have result[:, 1, :] > 0.5
 print(result[:, 1 , :])  
 
