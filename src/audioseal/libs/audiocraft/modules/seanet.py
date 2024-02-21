@@ -264,7 +264,9 @@ class SEANetEncoderKeepDimension(SEANetEncoder):
         x = self.model(x)
         x = self.reverse_convolution(x)
         # make sure dim didn't change
-        return x[:, :, :orig_nframes]
+        x = x[:, :, :orig_nframes]
+        return x
+
 
 class SEANetDecoder(nn.Module):
     """SEANet decoder.
