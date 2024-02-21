@@ -40,6 +40,9 @@ dependencies = [
     "pre-commit",
   ]
 
+[tool.setuptools.package-data]
+"audioseal" = ["py.typed", "cards/*.yaml"]
+
 [tool.flake8]
 extend_ignore = ["E", "Y"]  # Black
 per-file-ignores = [

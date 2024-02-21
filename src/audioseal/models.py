@@ -4,12 +4,11 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import math
 from typing import Optional, Tuple
 
 import torch
 
-from audioseal.libs.audiocraft.modules.seanet import SEANetEncoder
+from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
 
 
 class MsgProcessor(torch.nn.Module):
@@ -103,38 +102,6 @@ class AudioSealWM(torch.nn.Module):
         """Apply the watermarking to the audio signal x with a tune-down ratio (default 1.0)"""
         wm = self.get_watermark(x, message)
         return x + alpha * wm
-
-
-class SEANetEncoderKeepDimension(SEANetEncoder):
-    """
-    similar architecture to the audiocraft.SEANet encoder but with an extra step that
-    projects the output dimension to the same input dimension by repeating
-    the sequential
-
-    Args:
-        SEANetEncoder (_type_): _description_
-        output_dim (int): Output dimension
-    """
-
-    def __init__(self, *args, output_dim=8, **kwargs):
-
-        self.output_dim = output_dim
-        super().__init__(*args, **kwargs)
-        # Adding a reverse convolution layer
-        self.reverse_convolution = torch.nn.ConvTranspose1d(
-            in_channels=self.dimension,
-            out_channels=self.output_dim,
-            kernel_size=math.prod(self.ratios),
-            stride=math.prod(self.ratios),
-            padding=0,
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        orig_nframes = x.shape[-1]
-        x = self.model(x)
-        x = self.reverse_convolution(x)
-        # make sure dim didn't change
-        return x[:, :, :orig_nframes]
 
 
 class AudioSealDetector(torch.nn.Module):
