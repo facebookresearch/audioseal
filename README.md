@@ -53,13 +53,15 @@ Audioseal provides a simple API to watermark and detect the watermarks from an a
 
 from audioseal import AudioSeal
 
+wav, sr = ..., 16000 # a torch tensor of shape (batch, channels, samples) and a sample rate
+
 # model name corresponds to the YAML card file name found in audioseal/cards
 model = AudioSeal.load_generator("audioseal_wm_16bits")
 
 # Other way is to load directly from the checkpoint
 # model =  Watermarker.from_pretrained(checkpoint_path, device = wav.device)
 
-watermark = model.get_watermark(wav)
+watermark = model.get_watermark(wav, sr)
 
 # Optional: you can add a 16-bit message to embed in the watermark
 # msg = torch.randint(0, 2, (wav.shape(0), model.msg_processor.nbits), device=wav.device)
@@ -70,14 +72,14 @@ watermarked_audio = wav + watermark
 detector = AudioSeal.load_detector("audioseal_detector_16bits")
 
 # To detect the messages in the high-level.
-result, message = detector.detect_watermark(watermarked_audio)
+result, message = detector.detect_watermark(watermarked_audio, sr)
 
 print(result) # result is a float number indicating the probability of the audio being watermarked,
 print(message)  # message is a binary vector of 16 bits
 
 
 # To detect the messages in the low-level.
-result, message = detector(watermarked_audio)
+result, message = detector(watermarked_audio, sr)
 
 # result is a tensor of size batch x 2 x frames, indicating the probability (positive and negative) of watermarking for each frame
 # A watermarked audio should have result[:, 1, :] > 0.5
