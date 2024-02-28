@@ -7,6 +7,7 @@
 from typing import Optional, Tuple
 
 import torch
+import julius
 
 from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
 
@@ -73,6 +74,7 @@ class AudioSealWM(torch.nn.Module):
     def get_watermark(
         self,
         x: torch.Tensor,
+        sample_rate: int,
         message: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
@@ -81,6 +83,9 @@ class AudioSealWM(torch.nn.Module):
         n bits {0,1} will be generated
         """
         hidden = self.encoder(x)
+        if sample_rate != 16000:
+            x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
+
 
         if self.msg_processor is not None:
             if message is None:
@@ -96,11 +101,12 @@ class AudioSealWM(torch.nn.Module):
     def forward(
         self,
         x: torch.Tensor,
+        sample_rate: int,
         message: Optional[torch.Tensor] = None,
         alpha: float = 1.0,
     ) -> torch.Tensor:
         """Apply the watermarking to the audio signal x with a tune-down ratio (default 1.0)"""
-        wm = self.get_watermark(x, message)
+        wm = self.get_watermark(x,sample_rate=sample_rate, message=message)
         return x + alpha * wm
 
 
@@ -124,7 +130,7 @@ class AudioSealDetector(torch.nn.Module):
         self.nbits = nbits
 
     def detect_watermark(
-        self, x: torch.Tensor, message_threshold: float = 0.5
+        self, x: torch.Tensor, sample_rate: int, message_threshold: float = 0.5
     ) -> Tuple[float, torch.Tensor]:
         """
         A convenience function that returns a probability of an audio being watermarked,
@@ -136,7 +142,7 @@ class AudioSealDetector(torch.nn.Module):
             message_threshold: threshold used to convert the watermark output (probability
                 of each bits being 0 or 1) into the binary n-bit message. 
         """
-        result, message = self.forward(x)  # b x 2+nbits
+        result, message = self.forward(x, sample_rate=sample_rate)  # b x 2+nbits
         detected = torch.count_nonzero(torch.gt(result[:, 1, :], 0.5)) / result.shape[-1]
         detect_prob = detected.cpu().item()  # type: ignore
         message = torch.gt(message, message_threshold).int()
@@ -157,13 +163,15 @@ class AudioSealDetector(torch.nn.Module):
         decoded_message = result.mean(dim=-1)
         return torch.sigmoid(decoded_message)
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Detect the watermarks from the audio signal
 
         Args:
             x: Audio signal, size batch x frames
         """
+        if sample_rate != 16000:
+            x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         result = self.detector(x)  # b x 2+nbits
         # hardcode softmax on 2 first units used for detection
         result[:, :2, :] = torch.softmax(result[:, :2, :], dim=1)
