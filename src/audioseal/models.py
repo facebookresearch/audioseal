@@ -9,7 +9,11 @@ from typing import Optional, Tuple
 import torch
 import julius
 
+
 from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
+
+
+
 
 
 class MsgProcessor(torch.nn.Module):
@@ -83,10 +87,10 @@ class AudioSealWM(torch.nn.Module):
         n bits {0,1} will be generated
         """
         length = x.size(-1)
-        hidden = self.encoder(x)
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
-
+        hidden = self.encoder(x)
+        
 
         if self.msg_processor is not None:
             if message is None:
@@ -177,6 +181,7 @@ class AudioSealDetector(torch.nn.Module):
         Args:
             x: Audio signal, size batch x frames
         """
+
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         result = self.detector(x)  # b x 2+nbits
