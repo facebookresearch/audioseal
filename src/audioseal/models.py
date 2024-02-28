@@ -6,8 +6,8 @@
 
 from typing import Optional, Tuple
 
-import torch
 import julius
+import torch
 
 from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
 
