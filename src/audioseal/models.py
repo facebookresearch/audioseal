@@ -9,7 +9,6 @@ from typing import Optional, Tuple
 import torch
 import julius
 
-
 from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
 
 
@@ -87,7 +86,6 @@ class AudioSealWM(torch.nn.Module):
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         hidden = self.encoder(x)
-        
 
         if self.msg_processor is not None:
             if message is None:
@@ -114,7 +112,7 @@ class AudioSealWM(torch.nn.Module):
         alpha: float = 1.0,
     ) -> torch.Tensor:
         """Apply the watermarking to the audio signal x with a tune-down ratio (default 1.0)"""
-        wm = self.get_watermark(x,sample_rate=sample_rate, message=message)
+        wm = self.get_watermark(x, sample_rate=sample_rate, message=message)
         return x + alpha * wm
 
 
