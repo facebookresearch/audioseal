@@ -82,6 +82,7 @@ class AudioSealWM(torch.nn.Module):
         If the input message is None, a random message of
         n bits {0,1} will be generated
         """
+        length = x.size(-1)
         hidden = self.encoder(x)
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
@@ -94,8 +95,14 @@ class AudioSealWM(torch.nn.Module):
                 )
 
             hidden = self.msg_processor(hidden, message)
-        return self.decoder(hidden)[
-            ..., : x.size(-1)
+        
+        watermark = self.decoder(hidden)
+
+        if sample_rate != 16000:
+            watermark = julius.resample_frac(watermark, old_sr=16000, new_sr=sample_rate)
+        
+        return watermark[
+            ..., : length
         ]  # trim output cf encodec codebase
 
     def forward(
