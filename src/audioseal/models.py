@@ -13,9 +13,6 @@ import julius
 from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
 
 
-
-
-
 class MsgProcessor(torch.nn.Module):
     """
     Apply the secret message to the encoder output.
