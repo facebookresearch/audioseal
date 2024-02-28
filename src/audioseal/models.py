@@ -29,14 +29,16 @@ class MsgProcessor(torch.nn.Module):
 
     def forward(self, hidden: torch.Tensor, msg: torch.Tensor) -> torch.Tensor:
         """
-        Build the embedding map: 2 x k -> k xh, then sum on the first dim
-        msg is a binary tensor of size b x k
+        Build the embedding map: 2 x k -> k x h, then sum on the first dim
+        Args:
+            hidden: The encoder output, size: batch x hidden x frames
+            msg: The secret message, size: batch x k
         """
         # create indices to take from embedding layer
         indices = 2 * torch.arange(msg.shape[-1]).to(msg.device)  # k: 0 2 4 ... 2k
         indices = indices.repeat(msg.shape[0], 1)  # b x k
         indices = (indices + msg).long()
-        msg_aux = self.msg_processor(indices)  # bx k -> b x k x h
+        msg_aux = self.msg_processor(indices)  # b x k -> b x k x h
         msg_aux = msg_aux.sum(dim=-2)  # b x k x h -> b x h
         msg_aux = msg_aux.unsqueeze(-1).repeat(
             1, 1, hidden.shape[2]
@@ -61,11 +63,11 @@ class AudioSealWM(torch.nn.Module):
         self.decoder = decoder
         # The build should take care of validating the dimensions between component
         self.msg_processor = msg_processor
-        self._mesage: Optional[torch.Tensor] = None
+        self._message: Optional[torch.Tensor] = None
 
     @property
     def message(self) -> Optional[torch.Tensor]:
-        return self._mesage
+        return self._message
 
     @message.setter
     def message(self, message: torch.Tensor) -> None:
@@ -80,7 +82,11 @@ class AudioSealWM(torch.nn.Module):
         """
         Get the watermark from an audio tensor and a message.
         If the input message is None, a random message of
-        n bits {0,1} will be generated
+        n bits {0,1} will be generated.
+        Args:
+            x: Audio signal, size: batch x frames
+            sample_rate: The sample rate of the input audio
+            message: An optional binary message, size: batch x k
         """
         length = x.size(-1)
         if sample_rate != 16000:
@@ -89,9 +95,10 @@ class AudioSealWM(torch.nn.Module):
 
         if self.msg_processor is not None:
             if message is None:
-                message = self.message or torch.randint(
+                self.message = self.message or torch.randint(
                     0, 2, (x.shape[0], self.msg_processor.nbits), device=x.device
                 )
+                message = self.message
 
             hidden = self.msg_processor(hidden, message)
         
@@ -142,9 +149,9 @@ class AudioSealDetector(torch.nn.Module):
         A convenience function that returns a probability of an audio being watermarked,
         together with its message in n-bits (binary) format. If the audio is not watermarked,
         the message will be random.
-
         Args:
-            x: Audio signal, size batch x frames
+            x: Audio signal, size: batch x frames
+            sample_rate: The sample rate of the input audio
             message_threshold: threshold used to convert the watermark output (probability
                 of each bits being 0 or 1) into the binary n-bit message. 
         """
@@ -169,14 +176,15 @@ class AudioSealDetector(torch.nn.Module):
         decoded_message = result.mean(dim=-1)
         return torch.sigmoid(decoded_message)
 
-    def forward(self, x: torch.Tensor, sample_rate: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor, sample_rate: int
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Detect the watermarks from the audio signal
-
         Args:
             x: Audio signal, size batch x frames
+            sample_rate: The sample rate of the input audio
         """
-
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         result = self.detector(x)  # b x 2+nbits
