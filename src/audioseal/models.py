@@ -76,7 +76,7 @@ class AudioSealWM(torch.nn.Module):
     def get_watermark(
         self,
         x: torch.Tensor,
-        sample_rate: int,
+        sample_rate: int = 16_000,
         message: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
@@ -85,7 +85,8 @@ class AudioSealWM(torch.nn.Module):
         n bits {0,1} will be generated.
         Args:
             x: Audio signal, size: batch x frames
-            sample_rate: The sample rate of the input audio
+            sample_rate: The sample rate of the input audio (default 16khz as
+                currently supported by the main AudioSeal model)
             message: An optional binary message, size: batch x k
         """
         length = x.size(-1)
@@ -101,12 +102,12 @@ class AudioSealWM(torch.nn.Module):
                 message = self.message
 
             hidden = self.msg_processor(hidden, message)
-        
+
         watermark = self.decoder(hidden)
 
         if sample_rate != 16000:
             watermark = julius.resample_frac(watermark, old_sr=16000, new_sr=sample_rate)
-        
+
         return watermark[
             ..., : length
         ]  # trim output cf encodec codebase
@@ -114,7 +115,7 @@ class AudioSealWM(torch.nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        sample_rate: int,
+        sample_rate: int = 16_000,
         message: Optional[torch.Tensor] = None,
         alpha: float = 1.0,
     ) -> torch.Tensor:
@@ -128,8 +129,8 @@ class AudioSealDetector(torch.nn.Module):
     Detect the watermarking from an audio signal
     Args:
         SEANetEncoderKeepDimension (_type_): _description_
-        nbits (int): The number of bits in the secret message. The result will have size 
-            of 2 + nbits, where the first two items indicate the possibilities of the 
+        nbits (int): The number of bits in the secret message. The result will have size
+            of 2 + nbits, where the first two items indicate the possibilities of the
             audio being watermarked (positive / negative scores), he rest is used to decode
             the secret message. In 0bit watermarking (no secret message), the detector just
             returns 2 values.
@@ -143,7 +144,7 @@ class AudioSealDetector(torch.nn.Module):
         self.nbits = nbits
 
     def detect_watermark(
-        self, x: torch.Tensor, sample_rate: int, message_threshold: float = 0.5
+        self, x: torch.Tensor, sample_rate: int = 16_000, message_threshold: float = 0.5
     ) -> Tuple[float, torch.Tensor]:
         """
         A convenience function that returns a probability of an audio being watermarked,
@@ -177,7 +178,7 @@ class AudioSealDetector(torch.nn.Module):
         return torch.sigmoid(decoded_message)
 
     def forward(
-        self, x: torch.Tensor, sample_rate: int
+        self, x: torch.Tensor, sample_rate: int = 16_000
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Detect the watermarks from the audio signal
