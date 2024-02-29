@@ -17,7 +17,9 @@ logger = logging.getLogger("Audioseal")
 
 COMPATIBLE_WARNING = """
 AudioSeal is designed to work at a sample rate 16khz.
-Implicit sampling rate usage is deprecated and will be removed in future version
+Implicit sampling rate usage is deprecated and will be removed in future version.
+To remove this warning please add this argument to the function call: 
+sample_rate = your_sample_rate
 """
 
 
