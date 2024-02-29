@@ -3,19 +3,16 @@
 <a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/-Python 3.8+-blue?style=for-the-badge&logo=python&logoColor=white"></a>
 <a href="https://black.readthedocs.io/en/stable/"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-black.svg?style=for-the-badge&labelColor=gray"></a>
 
-<!-- We introduce AudioSeal, a method for speech localized watermarking, with state-of-the-art detector speed without compromising the watermarking robustness. 
-It jointly trains a generator that embeds a watermark in the audio, and a detector that detects the watermarked fragments in longer audios, even in the presence of editing.
+We introduce AudioSeal, a method for speech localized watermarking
+, with state-of-the-art robustness and detector speed. It jointly trains a generator that embeds a watermark in the audio, and a detector that detects the watermarked fragments in longer audios, even in the presence of editing.
 Audioseal achieves state-of-the-art detection performance of both natural and synthetic speech at the sample level (1/16k second resolution), it generates limited alteration of signal quality and is robust to many types of audio editing. 
-Audioseal is designed with a fast, single-pass detector, that significantly surpasses existing models in speed — achieving detection up to two orders of magnitude faster, making it ideal for large-scale and real-time applications. -->
-
-Inference code for AudioSeal, a method for speech localized watermarking, with state-of-the-art robustness and detector speed.
-More details can be found in the [paper](https://arxiv.org/abs/2401.17264).
-
-[[`arXiv`](https://arxiv.org/abs/2401.17264)]
-[[`Colab`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
+Audioseal is designed with a fast, single-pass detector, that significantly surpasses existing models in speed — achieving detection up to two orders of magnitude faster, making it ideal for large-scale and real-time applications.
 
 ![fig](https://github.com/facebookresearch/audioseal/assets/1453243/5d8cd96f-47b5-4c34-a3fa-7af386ed59f2)
 
+- [[`arXiv`](https://arxiv.org/abs/2401.17264)]
+- [[`Colab`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
+- Training code: Coming soon
 
 # :mate: Installation
 
@@ -96,17 +93,10 @@ print(result[:, 1 , :])
 print(message)  
 ```
 
-<!-- # Want to contribute?
+# Want to contribute?
 
- We welcome [Pull Requests](https://github.com/fairinternal/fair-getting-started-recipe/pulls) with improvements or suggestions.
- If you want to flag an issue or propose an improvement, but dont' know how to realize it, create a [GitHub Issue](https://github.com/fairinternal/fair-getting-started-recipe/issues).
-
-
-# Thanks to:
-* Jack Urbaneck, Matthew Muckley, Pierre Gleize,  Ashutosh Kumar, Megan Richards, Haider Al-Tahan, and Vivien Cabannes for contributions and feedback
-* The CIFAR10 [PyTorch Tutorial](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-) on which the training is based
-* [Hydra Lightning Template](https://github.com/ashleve/lightning-hydra-template) for inspiration on code organization -->
+ We welcome Pull Requests with improvements or suggestions.
+ If you want to flag an issue or propose an improvement, but dont' know how to realize it, create a GitHub Issue.
 
 # Troubleshooting
 
@@ -129,7 +119,7 @@ torchaudio does not handle the default backend well. Either downgrade your torch
 - [Tuan Tran](https://github.com/antoine-tran)
 - [Hady Elsahar](https://github.com/hadyelsahar)
 - [Pierre Fernandez](https://github.com/pierrefdz)
-- [Robin San Roman](https://github.com/Sparker17)
+- [Robin San Roman](https://github.com/robinsrm)
 
 # Citation
 
