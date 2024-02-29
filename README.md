@@ -4,15 +4,15 @@
 <a href="https://black.readthedocs.io/en/stable/"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-black.svg?style=for-the-badge&labelColor=gray"></a>
 
 We introduce AudioSeal, a method for speech localized watermarking
-, with state-of-the-art detector speed without compromising the watermarking robustness. It jointly trains a generator that embeds a watermark in the audio, and a detector that detects the watermarked fragments in longer audios, even in the presence of editing.
+, with state-of-the-art robustness and detector speed. It jointly trains a generator that embeds a watermark in the audio, and a detector that detects the watermarked fragments in longer audios, even in the presence of editing.
 Audioseal achieves state-of-the-art detection performance of both natural and synthetic speech at the sample level (1/16k second resolution), it generates limited alteration of signal quality and is robust to many types of audio editing. 
-Audioseal is designed with a fast, single-pass detector, that significantly surpasses existing models in speed — achieving detection up to two orders of magnitude faster, making it ideal for large-scale and real-time applications. 
-
-More details can be found in the [paper](https://arxiv.org/pdf/2401.17264.pdf)
-
+Audioseal is designed with a fast, single-pass detector, that significantly surpasses existing models in speed — achieving detection up to two orders of magnitude faster, making it ideal for large-scale and real-time applications.
 
 ![fig](https://github.com/facebookresearch/audioseal/assets/1453243/5d8cd96f-47b5-4c34-a3fa-7af386ed59f2)
 
+- [[`arXiv`](https://arxiv.org/abs/2401.17264)]
+- [[`Colab notebook`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
+- Training code: Coming soon
 
 # :mate: Installation
 
@@ -59,7 +59,12 @@ model = AudioSeal.load_generator("audioseal_wm_16bits")
 # Other way is to load directly from the checkpoint
 # model =  Watermarker.from_pretrained(checkpoint_path, device = wav.device)
 
-watermark = model.get_watermark(wav)
+# a torch tensor of shape (batch, channels, samples) and a sample rate
+# It is important to process the audio to the same sample rate as the model
+# expectes. In our case, we support 16khz audio 
+wav, sr = ..., 16000
+
+watermark = model.get_watermark(wav, sr)
 
 # Optional: you can add a 16-bit message to embed in the watermark
 # msg = torch.randint(0, 2, (wav.shape(0), model.msg_processor.nbits), device=wav.device)
@@ -70,14 +75,14 @@ watermarked_audio = wav + watermark
 detector = AudioSeal.load_detector("audioseal_detector_16bits")
 
 # To detect the messages in the high-level.
-result, message = detector.detect_watermark(watermarked_audio)
+result, message = detector.detect_watermark(watermarked_audio, sr)
 
 print(result) # result is a float number indicating the probability of the audio being watermarked,
 print(message)  # message is a binary vector of 16 bits
 
 
 # To detect the messages in the low-level.
-result, message = detector(watermarked_audio)
+result, message = detector(watermarked_audio, sr)
 
 # result is a tensor of size batch x 2 x frames, indicating the probability (positive and negative) of watermarking for each frame
 # A watermarked audio should have result[:, 1, :] > 0.5
@@ -88,17 +93,10 @@ print(result[:, 1 , :])
 print(message)  
 ```
 
-<!-- # Want to contribute?
+# Want to contribute?
 
- We welcome [Pull Requests](https://github.com/fairinternal/fair-getting-started-recipe/pulls) with improvements or suggestions.
- If you want to flag an issue or propose an improvement, but dont' know how to realize it, create a [GitHub Issue](https://github.com/fairinternal/fair-getting-started-recipe/issues).
-
-
-# Thanks to:
-* Jack Urbaneck, Matthew Muckley, Pierre Gleize,  Ashutosh Kumar, Megan Richards, Haider Al-Tahan, and Vivien Cabannes for contributions and feedback
-* The CIFAR10 [PyTorch Tutorial](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-) on which the training is based
-* [Hydra Lightning Template](https://github.com/ashleve/lightning-hydra-template) for inspiration on code organization -->
+ We welcome Pull Requests with improvements or suggestions.
+ If you want to flag an issue or propose an improvement, but dont' know how to realize it, create a GitHub Issue.
 
 # Troubleshooting
 
@@ -121,7 +119,7 @@ torchaudio does not handle the default backend well. Either downgrade your torch
 - [Tuan Tran](https://github.com/antoine-tran)
 - [Hady Elsahar](https://github.com/hadyelsahar)
 - [Pierre Fernandez](https://github.com/pierrefdz)
-- [Robin San Roman](https://github.com/Sparker17)
+- [Robin San Roman](https://github.com/robinsrm)
 
 # Citation
 
