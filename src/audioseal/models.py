@@ -4,12 +4,22 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import logging
 from typing import Optional, Tuple
 
 import julius
 import torch
 
 from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
+
+logger = logging.getLogger("Audioseal")
+
+COMPATIBLE_WARNING = """
+AudioSeal is designed to work at a sample rate 16khz.
+Implicit sampling rate usage is deprecated and will be removed in future version.
+To remove this warning please add this argument to the function call: 
+sample_rate = your_sample_rate
+"""
 
 
 class MsgProcessor(torch.nn.Module):
@@ -76,7 +86,7 @@ class AudioSealWM(torch.nn.Module):
     def get_watermark(
         self,
         x: torch.Tensor,
-        sample_rate: int = 16_000,
+        sample_rate: Optional[int] = None,
         message: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
@@ -90,6 +100,10 @@ class AudioSealWM(torch.nn.Module):
             message: An optional binary message, size: batch x k
         """
         length = x.size(-1)
+        if sample_rate is None:
+            logger.warning(COMPATIBLE_WARNING)
+            sample_rate = 16_000
+        assert sample_rate
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         hidden = self.encoder(x)
@@ -115,11 +129,14 @@ class AudioSealWM(torch.nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        sample_rate: int = 16_000,
+        sample_rate: Optional[int] = None,
         message: Optional[torch.Tensor] = None,
         alpha: float = 1.0,
     ) -> torch.Tensor:
         """Apply the watermarking to the audio signal x with a tune-down ratio (default 1.0)"""
+        if sample_rate is None:
+            logger.warning(COMPATIBLE_WARNING)
+            sample_rate = 16_000
         wm = self.get_watermark(x, sample_rate=sample_rate, message=message)
         return x + alpha * wm
 
@@ -144,7 +161,10 @@ class AudioSealDetector(torch.nn.Module):
         self.nbits = nbits
 
     def detect_watermark(
-        self, x: torch.Tensor, sample_rate: int = 16_000, message_threshold: float = 0.5
+        self,
+        x: torch.Tensor,
+        sample_rate: Optional[int] = None,
+        message_threshold: float = 0.5
     ) -> Tuple[float, torch.Tensor]:
         """
         A convenience function that returns a probability of an audio being watermarked,
@@ -156,6 +176,9 @@ class AudioSealDetector(torch.nn.Module):
             message_threshold: threshold used to convert the watermark output (probability
                 of each bits being 0 or 1) into the binary n-bit message. 
         """
+        if sample_rate is None:
+            logger.warning(COMPATIBLE_WARNING)
+            sample_rate = 16_000
         result, message = self.forward(x, sample_rate=sample_rate)  # b x 2+nbits
         detected = torch.count_nonzero(torch.gt(result[:, 1, :], 0.5)) / result.shape[-1]
         detect_prob = detected.cpu().item()  # type: ignore
@@ -178,7 +201,9 @@ class AudioSealDetector(torch.nn.Module):
         return torch.sigmoid(decoded_message)
 
     def forward(
-        self, x: torch.Tensor, sample_rate: int = 16_000
+        self,
+        x: torch.Tensor,
+        sample_rate: Optional[int] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Detect the watermarks from the audio signal
@@ -186,6 +211,10 @@ class AudioSealDetector(torch.nn.Module):
             x: Audio signal, size batch x frames
             sample_rate: The sample rate of the input audio
         """
+        if sample_rate is None:
+            logger.warning(COMPATIBLE_WARNING)
+            sample_rate = 16_000
+        assert sample_rate
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         result = self.detector(x)  # b x 2+nbits

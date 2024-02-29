@@ -13,8 +13,9 @@ detector.
 
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
+from audioseal import builder
 from audioseal.loader import AudioSeal
-from audioseal.models import AudioSealDetector, AudioSealWM
+from audioseal.models import AudioSealDetector, AudioSealWM, MsgProcessor
