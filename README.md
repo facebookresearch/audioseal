@@ -11,7 +11,7 @@ Audioseal is designed with a fast, single-pass detector, that significantly surp
 ![fig](https://github.com/facebookresearch/audioseal/assets/1453243/5d8cd96f-47b5-4c34-a3fa-7af386ed59f2)
 
 - [[`arXiv`](https://arxiv.org/abs/2401.17264)]
-- [[`Colab`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
+- [[`Colab notebook`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
 - Training code: Coming soon
 
 # :mate: Installation
