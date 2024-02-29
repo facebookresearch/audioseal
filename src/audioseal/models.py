@@ -12,7 +12,6 @@ import torch
 
 from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
 
-
 logger = logging.getLogger("Audioseal")
 
 COMPATIBLE_WARNING = """
@@ -104,7 +103,7 @@ class AudioSealWM(torch.nn.Module):
         if sample_rate is None:
             logger.warning(COMPATIBLE_WARNING)
             sample_rate = 16_000
-
+        assert sample_rate
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         hidden = self.encoder(x)
@@ -162,7 +161,7 @@ class AudioSealDetector(torch.nn.Module):
         self.nbits = nbits
 
     def detect_watermark(
-        self, 
+        self,
         x: torch.Tensor,
         sample_rate: Optional[int] = None,
         message_threshold: float = 0.5
@@ -203,7 +202,7 @@ class AudioSealDetector(torch.nn.Module):
 
     def forward(
         self,
-        x: torch.Tensor, 
+        x: torch.Tensor,
         sample_rate: Optional[int] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -215,6 +214,7 @@ class AudioSealDetector(torch.nn.Module):
         if sample_rate is None:
             logger.warning(COMPATIBLE_WARNING)
             sample_rate = 16_000
+        assert sample_rate
         if sample_rate != 16000:
             x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         result = self.detector(x)  # b x 2+nbits
