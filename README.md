@@ -56,13 +56,16 @@ Audioseal provides a simple API to watermark and detect the watermarks from an a
 
 from audioseal import AudioSeal
 
-wav, sr = ..., 16000 # a torch tensor of shape (batch, channels, samples) and a sample rate
-
 # model name corresponds to the YAML card file name found in audioseal/cards
 model = AudioSeal.load_generator("audioseal_wm_16bits")
 
 # Other way is to load directly from the checkpoint
 # model =  Watermarker.from_pretrained(checkpoint_path, device = wav.device)
+
+# a torch tensor of shape (batch, channels, samples) and a sample rate
+# It is important to process the audio to the same sample rate as the model
+# expectes. In our case, we support 16khz audio 
+wav, sr = ..., 16000
 
 watermark = model.get_watermark(wav, sr)
 
