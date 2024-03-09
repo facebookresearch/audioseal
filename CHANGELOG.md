@@ -4,10 +4,10 @@ All notable changes to AudioSeal are documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
-## [0.1.2] - 2024-02-22
+## [0.1.2] - 2024-02-29
 - Add py.typed to make audioseal mypy-friendly
 - Add the option to resample the input audio's sample rate to the expected sample rate of the model (https://github.com/facebookresearch/audioseal/pull/18)
-- Remove julius dependencies, move `attacks.py` to non-core code base of audioseal
+- Move `attacks.py` to non-core code base of audioseal
 - Remove duplicate module `SEANetEncoderKeepDimension` in `audioseal.lib.audiocraft.modules.seanet` and `audioseal.models`
 
 ## [0.1.1] - 2024-02-04
