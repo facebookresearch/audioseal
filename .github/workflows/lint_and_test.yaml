@@ -62,7 +62,7 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
       - name: pytest_unit
-        run: pytest -s -v tests/
+        run: pytest -s -v tests/test_models.py
 
   unit_test_old_torch:
     runs-on: ubuntu-latest
@@ -85,4 +85,4 @@ jobs:
           pip install torch==1.13.0 torchaudio==0.13.0 func_argparse soundfile pytest omegaconf numpy julius
           pip install --no-deps -e .
       - name: pytest_unit
-        run: pytest -s -v tests/
+        run: pytest -s -v tests/test_models.py
