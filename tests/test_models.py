@@ -37,7 +37,7 @@ def test_detector(example_audio):
     watermarked_audio = audio + watermark
 
     detector = AudioSeal.load_detector(("audioseal_detector_16bits"))
-    result, message = detector.detect_watermark(watermarked_audio, sample_rate=sr)  # noqa
+    result, message = detector.detect_watermark(watermarked_audio, sample_rate=sr)   # noqa
 
     # Due to non-deterministic decoding, messages are not always the same as message
     print(f"\nOriginal message: {secret_message}")
