@@ -280,14 +280,14 @@ class AudioEffects:
         - fraction (float): Fraction of indices to be set to 0 (from the start of the tensor) (default: 0.001, i.e, 0.1%)
 
         Returns:
-        - torch.Tensor: "Shushed" audio tensor.
+        - torch.Tensor: Transformed audio tensor.
         """
         batch_size, channels, time = tensor.shape
         shush_tensor = tensor.detach().clone()
         
         # Set the first `fraction*time` indices of the waveform to 0
         for b in range(batch_size):
-            for dim in range(channels):
-                shush_tensor[b][dim][0:int(fraction*time)] = 0.0
+            for channel in range(channels):
+                shush_tensor[b][channel][0:int(fraction*time)] = 0.0
                 
         return audio_effect_return(tensor=shush_tensor, mask=mask)
