@@ -282,12 +282,10 @@ class AudioEffects:
         Returns:
         - torch.Tensor: Transformed audio tensor.
         """
-        batch_size, channels, time = tensor.shape
+        time = tensor.size(-1)
         shush_tensor = tensor.detach().clone()
         
         # Set the first `fraction*time` indices of the waveform to 0
-        for b in range(batch_size):
-            for channel in range(channels):
-                shush_tensor[b][channel][0:int(fraction*time)] = 0.0
+        shush_tensor[:, :, :int(fraction*time)] = 0.0
                 
         return audio_effect_return(tensor=shush_tensor, mask=mask)
