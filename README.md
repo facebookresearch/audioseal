@@ -13,7 +13,7 @@ More details can be found in the [paper](https://arxiv.org/abs/2401.17264).
 
 # Updates:
 
-- 2024-03-09: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too !
+- 2024-04-02: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too !
 - 2024-02-29: AudioSeal 0.1.2 is out, with more bug fixes for resampled audios and updated notebooks
 
 # Abtract
