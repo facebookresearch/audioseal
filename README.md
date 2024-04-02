@@ -11,6 +11,11 @@ More details can be found in the [paper](https://arxiv.org/abs/2401.17264).
 
 ![fig](https://github.com/facebookresearch/audioseal/assets/1453243/5d8cd96f-47b5-4c34-a3fa-7af386ed59f2)
 
+# Updates:
+
+- 2024-03-09: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too !
+- 2024-02-29: AudioSeal 0.1.2 is out, with more bug fixes for resampled audios and updated notebooks
+
 # Abtract
 
 We introduce AudioSeal, a method for speech localized watermarking, with state-of-the-art robustness and detector speed. It jointly trains a generator that embeds a watermark in the audio, and a detector that detects the watermarked fragments in longer audios, even in the presence of editing.
@@ -116,7 +121,6 @@ torchaudio does not handle the default backend well. Either downgrade your torch
 # License
 
 - The code in this repository is released under the MIT license as found in the [LICENSE file](LICENSE).
-- The models weights in this repository are released under the CC-BY-NC 4.0 license as found in the [LICENSE_weights file](LICENSE_weights).
 
 # Maintainers:
 - [Tuan Tran](https://github.com/antoine-tran)

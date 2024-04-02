@@ -101,7 +101,9 @@ class AudioSeal:
 
     @staticmethod
     def _parse_model(
-        model_card_or_path: str, model_type: Type[AudioSealT]
+        model_card_or_path: str,
+        model_type: Type[AudioSealT],
+        nbits: Optional[int] = None,
     ) -> Tuple[Dict[str, Any], AudioSealT]:
         """
         Parse the information from the model card or checkpoint path using
@@ -156,6 +158,10 @@ class AudioSeal:
 
             config["seanet"] = seanet_config
 
+            # Patch 3: Put nbits into config if specified
+            if nbits and "nbits" not in config:
+                config["nbits"] = nbits
+
         if "model" in checkpoint:
             checkpoint = checkpoint["model"]
 
@@ -171,10 +177,13 @@ class AudioSeal:
         return checkpoint, schema
 
     @staticmethod
-    def load_generator(model_card_or_path: str) -> AudioSealWM:
+    def load_generator(
+        model_card_or_path: str,
+        nbits: Optional[int] = None,
+    ) -> AudioSealWM:
         """Load the AudioSeal generator from the model card"""
         checkpoint, config = AudioSeal._parse_model(
-            model_card_or_path, AudioSealWMConfig
+            model_card_or_path, AudioSealWMConfig, nbits=nbits,
         )
 
         model = create_generator(config)
@@ -182,9 +191,12 @@ class AudioSeal:
         return model
 
     @staticmethod
-    def load_detector(model_card_or_path: str) -> AudioSealDetector:
+    def load_detector(
+        model_card_or_path: str,
+        nbits: Optional[int] = None,
+    ) -> AudioSealDetector:
         checkpoint, config = AudioSeal._parse_model(
-            model_card_or_path, AudioSealDetectorConfig
+            model_card_or_path, AudioSealDetectorConfig, nbits=nbits,
         )
         model = create_detector(config)
         model.load_state_dict(checkpoint)
