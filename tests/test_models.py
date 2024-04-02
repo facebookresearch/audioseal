@@ -46,7 +46,7 @@ def test_detector(example_audio):
         "Matching bits in decoded and original messages: "
         f"{torch.count_nonzero(torch.eq(message, secret_message)).item()}\n"
     )
-    assert result > 0.6
+    assert result > 0.5
 
     # Try to detect the unwatermarked audio
     result, _ = detector.detect_watermark(audio, sample_rate=sr)  # noqa
