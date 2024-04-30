@@ -88,7 +88,15 @@ def load_model_checkpoint(
         )
     elif model_path.startswith("facebook/audioseal/"):
         hf_filename = model_path[len("facebook/audioseal/"):]
-        from huggingface_hub import hf_hub_download
+
+        try:
+            from huggingface_hub import hf_hub_download
+        except ModuleNotFoundError:
+            print(
+                f"The model path {model_path} seems to be a direct HF path, "
+                "but you do not install Huggingface_hub. Install with for example "
+                "`pip install huggingface_hub` to use this feature."
+            )
         file = hf_hub_download(
             repo_id="facebook/audioseal",
             filename=hf_filename,
