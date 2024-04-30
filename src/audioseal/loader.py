@@ -25,6 +25,7 @@ from urllib.parse import urlparse  # noqa: F401
 import torch
 from omegaconf import DictConfig, OmegaConf
 
+import audioseal
 from audioseal.builder import (
     AudioSealDetectorConfig,
     AudioSealWMConfig,
@@ -85,8 +86,20 @@ def load_model_checkpoint(
         return torch.hub.load_state_dict_from_url(
             str(model_path), model_dir=cache_dir, map_location=device, file_name=hash_
         )
+    elif model_path.startswith("facebook/audioseal/"):
+        hf_filename = model_path[len("facebook/audioseal/"):]
+        from huggingface_hub import hf_hub_download
+        file = hf_hub_download(
+            repo_id="facebook/audioseal",
+            filename=hf_filename,
+            cache_dir=cache_dir,
+            library_name="audioseal",
+            library_version=audioseal.__version__,
+        )
+        return torch.load(file, map_location=device)
     else:
         raise ModelLoadError(f"Path or uri {model_path} is unknown or does not exist")
+    
 
 
 def load_local_model_config(model_card: str) -> Optional[DictConfig]:
@@ -125,7 +138,7 @@ class AudioSeal:
         else:
             config_dict = {}
             checkpoint = load_model_checkpoint(model_card_or_path)
-
+        
         if "xp.cfg" in checkpoint:
             config_dict = {**checkpoint["xp.cfg"], **config_dict}  # type: ignore
 
