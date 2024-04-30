@@ -6,7 +6,7 @@
 
 name: audioseal_wm_16bits
 model_type: seanet
-checkpoint: "https://dl.fbaipublicfiles.com/audioseal/6edcf62f/generator.pth"
+checkpoint: "https://huggingface.co/facebook/audioseal/resolve/main/generator_base.pth"
 nbits: 16
 seanet:
   activation: ELU
