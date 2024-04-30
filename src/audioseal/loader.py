@@ -81,13 +81,12 @@ def load_model_checkpoint(
     parts = urlparse(str(model_path))
     if parts.scheme == "https":
 
-        # TODO: Add HF Hub
         hash_ = sha1(parts.path.encode()).hexdigest()[:24]
         return torch.hub.load_state_dict_from_url(
             str(model_path), model_dir=cache_dir, map_location=device, file_name=hash_
         )
-    elif model_path.startswith("facebook/audioseal/"):
-        hf_filename = model_path[len("facebook/audioseal/"):]
+    elif str(model_path).startswith("facebook/audioseal/"):
+        hf_filename = str(model_path)[len("facebook/audioseal/") :]
 
         try:
             from huggingface_hub import hf_hub_download
@@ -107,7 +106,6 @@ def load_model_checkpoint(
         return torch.load(file, map_location=device)
     else:
         raise ModelLoadError(f"Path or uri {model_path} is unknown or does not exist")
-    
 
 
 def load_local_model_config(model_card: str) -> Optional[DictConfig]:
@@ -146,7 +144,7 @@ class AudioSeal:
         else:
             config_dict = {}
             checkpoint = load_model_checkpoint(model_card_or_path)
-        
+
         if "xp.cfg" in checkpoint:
             config_dict = {**checkpoint["xp.cfg"], **config_dict}  # type: ignore
 

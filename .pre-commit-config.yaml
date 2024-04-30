@@ -13,10 +13,9 @@ repos:
       - id: end-of-file-fixer
 
   - repo: https://github.com/psf/black
-    rev: 24.1.1
+    rev: 24.4.2
     hooks:
       - id: black
-        language_version: python3.8
 
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
