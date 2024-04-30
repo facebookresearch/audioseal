@@ -7,13 +7,13 @@ Inference code for AudioSeal, a method for speech localized watermarking, with s
 More details can be found in the [paper](https://arxiv.org/abs/2401.17264).
 
 [[`arXiv`](https://arxiv.org/abs/2401.17264)]
-[[`Colab notebook`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
+[[`Colab notebook`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)][[🤗`Hugging Face`](https://huggingface.co/facebook/audioseal)]
 
 ![fig](https://github.com/facebookresearch/audioseal/assets/1453243/5d8cd96f-47b5-4c34-a3fa-7af386ed59f2)
 
 # Updates:
 
-- 2024-03-09: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too !
+- 2024-04-02: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too !
 - 2024-02-29: AudioSeal 0.1.2 is out, with more bug fixes for resampled audios and updated notebooks
 
 # Abtract
@@ -40,7 +40,7 @@ pip install -e .
 
 # :gear: Models
 
-We provide the checkpoints for the following models:
+You can find all the model checkpoints on the [Hugging Face Hub](https://huggingface.co/facebook/audioseal). We provide the checkpoints for the following models:
 
 - [AudioSeal Generator](src/audioseal/cards/audioseal_wm_16bits.yaml).
   It takes as input an audio signal (as a waveform), and outputs a watermark of the same size as the input, that can be added to the input to watermark it.
