@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [0.1.3] - 2024-04-30
  - Fix bug in getting the watermark with non-empty message created in CPU, while the model is loaded in CUDA
- - Update Fix bug in building the model card programmatically (not via .YAML file using OmegaConf)  
+ - Update Fix bug in building the model card programmatically (not via .YAML file using OmegaConf)
+ - Add support for HuggingFace Hub, now we can load the model from HF. Unit tests are updated
 
 
 ## [0.1.2] - 2024-02-29
