@@ -266,6 +266,7 @@ class SEANetEncoderKeepDimension(SEANetEncoder):
         # make sure dim didn't change
         return x[:, :, :orig_nframes]
 
+
 class SEANetDecoder(nn.Module):
     """SEANet decoder.
 

@@ -8,3 +8,4 @@ black
 isort
 flake8
 pre-commit
+huggingface_hub

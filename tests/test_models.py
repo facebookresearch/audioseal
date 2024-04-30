@@ -12,6 +12,7 @@ import torch
 import torchaudio
 
 from audioseal import AudioSeal
+from audioseal.models import AudioSealDetector, AudioSealWM
 
 
 @pytest.fixture
@@ -51,3 +52,12 @@ def test_detector(example_audio):
     # Try to detect the unwatermarked audio
     result, _ = detector.detect_watermark(audio, sample_rate=sr)  # noqa
     assert result < 0.5
+
+
+def test_loading_from_hf(example_audio):
+    audio, sr = example_audio
+
+    generator = AudioSeal.load_generator("facebook/audioseal/generator_base.pth", nbits=16)
+    detector = AudioSeal.load_detector("facebook/audioseal/detector_base.pth", nbits=16)
+
+    assert isinstance(generator, AudioSealWM) and isinstance(detector, AudioSealDetector)

@@ -109,9 +109,9 @@ class AudioEffects:
         # Define a few reflections with decreasing amplitude
         impulse_response[0] = 1.0  # Direct sound
 
-        impulse_response[
-            int(sample_rate * duration) - 1
-        ] = volume  # First reflection after 100ms
+        impulse_response[int(sample_rate * duration) - 1] = (
+            volume  # First reflection after 100ms
+        )
 
         # Add batch and channel dimensions to the impulse response
         impulse_response = impulse_response.unsqueeze(0).unsqueeze(0)
