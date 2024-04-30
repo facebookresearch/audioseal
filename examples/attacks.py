@@ -109,9 +109,9 @@ class AudioEffects:
         # Define a few reflections with decreasing amplitude
         impulse_response[0] = 1.0  # Direct sound
 
-        impulse_response[
-            int(sample_rate * duration) - 1
-        ] = volume  # First reflection after 100ms
+        impulse_response[int(sample_rate * duration) - 1] = (
+            volume  # First reflection after 100ms
+        )
 
         # Add batch and channel dimensions to the impulse response
         impulse_response = impulse_response.unsqueeze(0).unsqueeze(0)
@@ -265,27 +265,3 @@ class AudioEffects:
         tensor: torch.Tensor, mask: tp.Optional[torch.Tensor] = None
     ) -> tp.Union[tp.Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
         return audio_effect_return(tensor=tensor, mask=mask)
-
-    @staticmethod
-    def shush(
-        tensor: torch.Tensor,
-        fraction: float = 0.001,
-        mask: tp.Optional[torch.Tensor] = None
-    ) -> tp.Union[tp.Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
-        """
-        Sets a specified chronological fraction of indices of the input tensor (audio signal) to 0.
-
-        Parameters:
-        - tensor (torch.Tensor): Input audio tensor. Assumes tensor shape is (batch_size, channels, time).
-        - fraction (float): Fraction of indices to be set to 0 (from the start of the tensor) (default: 0.001, i.e, 0.1%)
-
-        Returns:
-        - torch.Tensor: Transformed audio tensor.
-        """
-        time = tensor.size(-1)
-        shush_tensor = tensor.detach().clone()
-        
-        # Set the first `fraction*time` indices of the waveform to 0
-        shush_tensor[:, :, :int(fraction*time)] = 0.0
-                
-        return audio_effect_return(tensor=shush_tensor, mask=mask)

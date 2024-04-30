@@ -100,7 +100,7 @@ def load_local_model_config(model_card: str) -> Optional[DictConfig]:
 class AudioSeal:
 
     @staticmethod
-    def _parse_model(
+    def parse_model(
         model_card_or_path: str,
         model_type: Type[AudioSealT],
         nbits: Optional[int] = None,
@@ -126,55 +126,56 @@ class AudioSeal:
             config_dict = {}
             checkpoint = load_model_checkpoint(model_card_or_path)
 
-        # If the checkpoint has config in its, take this but uses the info
-        # in the mode as precedence
-        assert isinstance(
-            checkpoint, dict
-        ), f"Expect loaded checkpoint to be a dictionary, get {type(checkpoint)}"
-        assert isinstance(
-            config_dict, dict
-        ), f"Except loaded config to be a dictionary, get {type(config_dict)}"
         if "xp.cfg" in checkpoint:
-            config = {**checkpoint["xp.cfg"], **config_dict}  # type: ignore
-            assert config is not None
-            assert (
-                "seanet" in config
-            ), f"missing seanet backbone config in {model_card_or_path}"
+            config_dict = {**checkpoint["xp.cfg"], **config_dict}  # type: ignore
 
-            # Patch 1: Resolve the variables in the checkpoint
-            config = OmegaConf.create(config)
-            OmegaConf.resolve(config)
-            config = OmegaConf.to_container(config)  # type: ignore
-
-            # Patch 2: Put decoder, encoder and detector outside seanet
-            seanet_config = config["seanet"]
-            for key_to_patch in ["encoder", "decoder", "detector"]:
-                if key_to_patch in seanet_config:
-                    config_to_patch = config.get(key_to_patch) or {}
-                    config[key_to_patch] = {
-                        **config_to_patch,
-                        **seanet_config.pop(key_to_patch),
-                    }
-
-            config["seanet"] = seanet_config
-
-            # Patch 3: Put nbits into config if specified
-            if nbits and "nbits" not in config:
-                config["nbits"] = nbits
+        model_config = AudioSeal.parse_config(config_dict, config_type=model_type, nbits=nbits)  # type: ignore
 
         if "model" in checkpoint:
             checkpoint = checkpoint["model"]
 
+        return checkpoint, model_config
+
+    @staticmethod
+    def parse_config(
+        config: Dict[str, Any],
+        config_type: Type[AudioSealT],
+        nbits: Optional[int] = None,
+    ) -> AudioSealT:
+
+        assert "seanet" in config, f"missing seanet backbone config in {config}"
+
+        # Patch 1: Resolve the variables in the checkpoint
+        config = OmegaConf.create(config)  # type: ignore
+        OmegaConf.resolve(config)  # type: ignore
+        config = OmegaConf.to_container(config)  # type: ignore
+
+        # Patch 2: Put decoder, encoder and detector outside seanet
+        seanet_config = config["seanet"]
+        for key_to_patch in ["encoder", "decoder", "detector"]:
+            if key_to_patch in seanet_config:
+                config_to_patch = config.get(key_to_patch) or {}
+                config[key_to_patch] = {
+                    **config_to_patch,
+                    **seanet_config.pop(key_to_patch),
+                }
+
+        config["seanet"] = seanet_config
+
+        # Patch 3: Put nbits into config if specified
+        if nbits and "nbits" not in config:
+            config["nbits"] = nbits
+
         # remove attributes not related to the model_type
         result_config = {}
-        assert config, f"Empty config in {model_card_or_path}"
-        for field in fields(model_type):
+        assert config, f"Empty config"
+        for field in fields(config_type):
             if field.name in config:
                 result_config[field.name] = config[field.name]
 
-        schema = OmegaConf.structured(model_type)
+        schema = OmegaConf.structured(config_type)
         schema.merge_with(result_config)
-        return checkpoint, schema
+        return schema
 
     @staticmethod
     def load_generator(
@@ -182,8 +183,10 @@ class AudioSeal:
         nbits: Optional[int] = None,
     ) -> AudioSealWM:
         """Load the AudioSeal generator from the model card"""
-        checkpoint, config = AudioSeal._parse_model(
-            model_card_or_path, AudioSealWMConfig, nbits=nbits,
+        checkpoint, config = AudioSeal.parse_model(
+            model_card_or_path,
+            AudioSealWMConfig,
+            nbits=nbits,
         )
 
         model = create_generator(config)
@@ -195,8 +198,10 @@ class AudioSeal:
         model_card_or_path: str,
         nbits: Optional[int] = None,
     ) -> AudioSealDetector:
-        checkpoint, config = AudioSeal._parse_model(
-            model_card_or_path, AudioSealDetectorConfig, nbits=nbits,
+        checkpoint, config = AudioSeal.parse_model(
+            model_card_or_path,
+            AudioSealDetectorConfig,
+            nbits=nbits,
         )
         model = create_detector(config)
         model.load_state_dict(checkpoint)

@@ -109,22 +109,24 @@ class AudioSealWM(torch.nn.Module):
         hidden = self.encoder(x)
 
         if self.msg_processor is not None:
-            if message is None:
-                self.message = self.message or torch.randint(
-                    0, 2, (x.shape[0], self.msg_processor.nbits), device=x.device
-                )
-                message = self.message
+            if self.message is None:
+                self.message = torch.randint(0, 2, (x.shape[0], self.msg_processor.nbits), device=x.device)
+            else:
+                self.message = self.message.to(device=x.device)
+
+            
+            message = self.message
 
             hidden = self.msg_processor(hidden, message)
 
         watermark = self.decoder(hidden)
 
         if sample_rate != 16000:
-            watermark = julius.resample_frac(watermark, old_sr=16000, new_sr=sample_rate)
+            watermark = julius.resample_frac(
+                watermark, old_sr=16000, new_sr=sample_rate
+            )
 
-        return watermark[
-            ..., : length
-        ]  # trim output cf encodec codebase
+        return watermark[..., :length]  # trim output cf encodec codebase
 
     def forward(
         self,
@@ -164,7 +166,7 @@ class AudioSealDetector(torch.nn.Module):
         self,
         x: torch.Tensor,
         sample_rate: Optional[int] = None,
-        message_threshold: float = 0.5
+        message_threshold: float = 0.5,
     ) -> Tuple[float, torch.Tensor]:
         """
         A convenience function that returns a probability of an audio being watermarked,
@@ -174,13 +176,15 @@ class AudioSealDetector(torch.nn.Module):
             x: Audio signal, size: batch x frames
             sample_rate: The sample rate of the input audio
             message_threshold: threshold used to convert the watermark output (probability
-                of each bits being 0 or 1) into the binary n-bit message. 
+                of each bits being 0 or 1) into the binary n-bit message.
         """
         if sample_rate is None:
             logger.warning(COMPATIBLE_WARNING)
             sample_rate = 16_000
         result, message = self.forward(x, sample_rate=sample_rate)  # b x 2+nbits
-        detected = torch.count_nonzero(torch.gt(result[:, 1, :], 0.5)) / result.shape[-1]
+        detected = (
+            torch.count_nonzero(torch.gt(result[:, 1, :], 0.5)) / result.shape[-1]
+        )
         detect_prob = detected.cpu().item()  # type: ignore
         message = torch.gt(message, message_threshold).int()
         return detect_prob, message
@@ -193,9 +197,8 @@ class AudioSealDetector(torch.nn.Module):
         Returns:
             The message of size batch x nbits, indicating probability of 1 for each bit
         """
-        assert (
-            (result.dim() > 2 and result.shape[1] == self.nbits) or
-            (self.dim() == 2 and result.shape[0] == self.nbits)
+        assert (result.dim() > 2 and result.shape[1] == self.nbits) or (
+            self.dim() == 2 and result.shape[0] == self.nbits
         ), f"Expect message of size [,{self.nbits}, frames] (get {result.size()})"
         decoded_message = result.mean(dim=-1)
         return torch.sigmoid(decoded_message)

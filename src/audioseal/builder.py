@@ -4,9 +4,10 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from dataclasses import asdict, dataclass, is_dataclass
+from typing import Any, Dict, List, Mapping, Optional
 
+from omegaconf import DictConfig, OmegaConf
 from torch import device, dtype
 from typing_extensions import TypeAlias
 
@@ -71,6 +72,17 @@ class AudioSealDetectorConfig:
     detector: DetectorConfig
 
 
+def as_dict(obj: Any) -> Dict[str, Any]:
+    if isinstance(obj, dict):
+        return obj
+    if is_dataclass(obj):
+        return asdict(obj)
+    elif isinstance(obj, DictConfig):
+        return OmegaConf.to_container(obj)  # type: ignore
+    else:
+        raise NotImplementedError(f"Unsupported type for config: {type(obj)}")
+
+
 def create_generator(
     config: AudioSealWMConfig,
     *,
@@ -81,11 +93,11 @@ def create_generator(
 
     #  Currently the encoder hparams are the same as
     # SEANet, but this can be changed in the future.
-    encoder = audiocraft.modules.SEANetEncoder(**config.seanet)  # type: ignore[arg-type]
+    encoder = audiocraft.modules.SEANetEncoder(**as_dict(config.seanet))
     encoder = encoder.to(device=device, dtype=dtype)
 
-    decoder_config = {**config.seanet, **config.decoder}  # type: ignore
-    decoder = audiocraft.modules.SEANetDecoder(**decoder_config)  # type: ignore[arg-type]
+    decoder_config = {**as_dict(config.seanet), **as_dict(config.decoder)}
+    decoder = audiocraft.modules.SEANetDecoder(**as_dict(decoder_config))
     decoder = decoder.to(device=device, dtype=dtype)
 
     msgprocessor = MsgProcessor(nbits=config.nbits, hidden_size=config.seanet.dimension)
@@ -100,7 +112,7 @@ def create_detector(
     device: Optional[Device] = None,
     dtype: Optional[DataType] = None,
 ) -> AudioSealDetector:
-    detector_config = {**config.seanet, **config.detector}  # type: ignore
+    detector_config = {**as_dict(config.seanet), **as_dict(config.detector)}
     detector = AudioSealDetector(nbits=config.nbits, **detector_config)
     detector = detector.to(device=device, dtype=dtype)
     return detector
