@@ -3,7 +3,12 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
+#
+# Example attacks using different audio effects. 
+# For full list of atacks, check 
+# https://github.com/facebookresearch/audiocraft/blob/main/audiocraft/utils/audio_effects.py
+#
+#
 import typing as tp
 
 import julius

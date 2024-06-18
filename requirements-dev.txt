@@ -1,5 +1,5 @@
 # For developers wanting to contribute to AudioSeal
-func_argparse
+fire
 torchaudio
 soundfile
 pytest
