@@ -109,13 +109,13 @@ class AudioSealWM(torch.nn.Module):
         hidden = self.encoder(x)
 
         if self.msg_processor is not None:
-            if message is None:
-                if self.message is None:
-                    message = torch.randint(0, 2, (x.shape[0], self.msg_processor.nbits), device=x.device)
-                else:
-                    message = self.message.to(device=x.device)
+            if self.message is None:
+                self.message = torch.randint(0, 2, (x.shape[0], self.msg_processor.nbits), device=x.device)
             else:
-                message = message.to(device=x.device)
+                self.message = self.message.to(device=x.device)
+
+            
+            message = self.message
 
             hidden = self.msg_processor(hidden, message)
 

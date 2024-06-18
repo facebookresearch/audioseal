@@ -13,6 +13,8 @@ More details can be found in the [paper](https://arxiv.org/abs/2401.17264).
 
 # Updates:
 
+- 2024-06-17: Training code is now available. Check the [instruction](./docs/TRAINING.md) !!!
+- 2024-05-31: Our paper gets accepted at ICML'24 :)
 - 2024-04-02: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too !
 - 2024-02-29: AudioSeal 0.1.2 is out, with more bug fixes for resampled audios and updated notebooks
 
@@ -101,6 +103,10 @@ print(result[:, 1 , :])
 print(message)  
 ```
 
+# Train your own watermarking model
+
+See [here](./docs/TRAINING.md) for details on how to train your own Watermarking model.
+
 # Want to contribute?
 
  We welcome Pull Requests with improvements or suggestions.
@@ -115,8 +121,8 @@ dummy batch dimension to your input (e.g. `wav.unsqueeze(0)`, see [example noteb
 uploaded to the model hub, which is not compatible in Windows. Try to invalidate the cache by removing the files in `C:\Users\<USER>\.cache\audioseal`
 and re-run again.
 
-- If you use torchaudio to handle your audios and encounter the error `Couldn't find appropriate backend to handle uri ...`, this is due to newer version of 
-torchaudio does not handle the default backend well. Either downgrade your torchaudio to `2.0.1` or earlier, or install `soundfile` as your audio backend.
+- If you use torchaudio to handle your audios and encounter the error `Couldn't find appropriate backend to handle uri ...`, this is due to newer version of
+torchaudio does not handle the default backend well. Either downgrade your torchaudio to `2.1.0` or earlier, or install `soundfile` as your audio backend.
 
 # License
 
@@ -136,7 +142,7 @@ If you find this repository useful, please consider giving a star :star: and ple
 @article{sanroman2024proactive,
   title={Proactive Detection of Voice Cloning with Localized Watermarking},
   author={San Roman, Robin and Fernandez, Pierre and Elsahar, Hady and D´efossez, Alexandre and Furon, Teddy and Tran, Tuan},
-  journal={arXiv preprint},
+  journal={ICML},
   year={2024}
 }
 ```
