@@ -17,7 +17,7 @@ logger = logging.getLogger("Audioseal")
 COMPATIBLE_WARNING = """
 AudioSeal is designed to work at a sample rate 16khz.
 Implicit sampling rate usage is deprecated and will be removed in future version.
-To remove this warning please add this argument to the function call: 
+To remove this warning please add this argument to the function call:
 sample_rate = your_sample_rate
 """
 
@@ -111,7 +111,9 @@ class AudioSealWM(torch.nn.Module):
         if self.msg_processor is not None:
             if message is None:
                 if self.message is None:
-                    message = torch.randint(0, 2, (x.shape[0], self.msg_processor.nbits), device=x.device)
+                    message = torch.randint(
+                        0, 2, (x.shape[0], self.msg_processor.nbits), device=x.device
+                    )
                 else:
                     message = self.message.to(device=x.device)
             else:

@@ -4,8 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Dict, List, Mapping, Optional
+from dataclasses import asdict, dataclass, field, is_dataclass
+from typing import Any, Dict, List, Optional
 
 from omegaconf import DictConfig, OmegaConf
 from torch import device, dtype
@@ -55,7 +55,7 @@ class DecoderConfig:
 
 @dataclass
 class DetectorConfig:
-    output_dim: int
+    output_dim: int = 32
 
 
 @dataclass
@@ -69,7 +69,7 @@ class AudioSealWMConfig:
 class AudioSealDetectorConfig:
     nbits: int
     seanet: SEANetConfig
-    detector: DetectorConfig
+    detector: DetectorConfig = field(default_factory=lambda: DetectorConfig())
 
 
 def as_dict(obj: Any) -> Dict[str, Any]:
