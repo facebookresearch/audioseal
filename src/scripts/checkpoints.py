@@ -10,8 +10,9 @@ from pathlib import Path
 import torch
 
 
-def convert(checkpoint: Path, outdir: Path, suffix: str = "base"):
+def convert(checkpoint: str, outdir: str, suffix: str = "base"):
     """Convert the checkpoint to generator and detector"""
+    outdir_path = Path(outdir)
     ckpt = torch.load(checkpoint)
 
     # keep inference-related params only
@@ -27,16 +28,21 @@ def convert(checkpoint: Path, outdir: Path, suffix: str = "base"):
 
     for layer in ckpt["model"].keys():
         if layer.startswith("detector"):
-            detector_ckpt["model"][layer] = ckpt["model"][layer]
+            new_layer = layer[9:]
+            detector_ckpt["model"][new_layer] = ckpt["model"][layer]  # type: ignore
         elif layer == "msg_processor.msg_processor.0.weight":
-            generator_ckpt["model"]["msg_processor.msg_processor.weight"] = ckpt[
+            generator_ckpt["model"]["msg_processor.msg_processor.weight"] = ckpt[  # type: ignore
                 "model"
-            ][layer]
+            ][
+                layer
+            ]
         else:
-            generator_ckpt["model"][layer] = ckpt["model"][layer]
+            assert layer.startswith("generator"), f"Invalid layer: {layer}"
+            new_layer = layer[10:]
+            generator_ckpt["model"][new_layer] = ckpt["model"][layer]  # type: ignore
 
-    torch.save(generator_ckpt, outdir / (checkpoint.stem + f"_generator_{suffix}.pth"))
-    torch.save(detector_ckpt, outdir / (checkpoint.stem + f"_detector_{suffix}.pth"))
+    torch.save(generator_ckpt, outdir_path / (f"checkpoint_generator_{suffix}.pth"))
+    torch.save(detector_ckpt, outdir_path / (f"checkpoint_detector_{suffix}.pth"))
 
 
 if __name__ == "__main__":
