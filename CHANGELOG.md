@@ -4,6 +4,11 @@ All notable changes to AudioSeal are documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
+## [0.1.3] - 2024-06-24
+
+- Update scripts to new training code
+- Fix bugs in loading custom fine-tuned model (https://github.com/facebookresearch/audioseal/issues/37)
+
 ## [0.1.3] - 2024-04-30
 
 - Fix bug in getting the watermark with non-empty message created in CPU, while the model is loaded in CUDA
