@@ -1,7 +1,14 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
+
 import torch
 
 
-def combine(
+def combine_checkpoints(
     generator_checkpoint: str, detector_checkpoint: str, output_checkpoint: str
 ):
     """Combine split generator and detector checkpoints into a single checkpoint that can be further trained."""
@@ -35,4 +42,4 @@ def combine(
 if __name__ == "__main__":
     import fire
 
-    fire.Fire(combine)
+    fire.Fire(combine_checkpoints)
