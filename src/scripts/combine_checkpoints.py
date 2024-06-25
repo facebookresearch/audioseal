@@ -5,11 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 
 
+from pathlib import Path
+from typing import Union
+
 import torch
 
 
 def combine_checkpoints(
-    generator_checkpoint: str, detector_checkpoint: str, output_checkpoint: str
+    generator_checkpoint: Union[str, Path],
+    detector_checkpoint: Union[str, Path],
+    output_checkpoint: Union[str, Path],
 ):
     """Combine split generator and detector checkpoints into a single checkpoint that can be further trained."""
     gen_ckpt = torch.load(generator_checkpoint)
