@@ -7,7 +7,11 @@ Inference code for AudioSeal, a method for speech localized watermarking, with s
 More details can be found in the [paper](https://arxiv.org/abs/2401.17264).
 
 [[`arXiv`](https://arxiv.org/abs/2401.17264)]
-[[`Colab notebook`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)][[🤗`Hugging Face`](https://huggingface.co/facebook/audioseal)]
+[[🤗`Hugging Face`](https://huggingface.co/facebook/audioseal)]
+[[`Colab notebook`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
+[[`Webpage`](https://pierrefdz.github.io/publications/audioseal/)]
+[[`Blog`](https://about.fb.com/news/2024/06/releasing-new-ai-research-models-to-accelerate-innovation-at-scale/)]
+[[`Press`](https://www.technologyreview.com/2024/06/18/1094009/meta-has-created-a-way-to-watermark-ai-generated-speech/)]
 
 ![fig](https://github.com/facebookresearch/audioseal/assets/1453243/5d8cd96f-47b5-4c34-a3fa-7af386ed59f2)
 
