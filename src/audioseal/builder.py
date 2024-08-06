@@ -75,7 +75,7 @@ class AudioSealDetectorConfig:
 def as_dict(obj: Any) -> Dict[str, Any]:
     if isinstance(obj, dict):
         return obj
-    if is_dataclass(obj):
+    if is_dataclass(obj) and not isinstance(obj, type):
         return asdict(obj)
     elif isinstance(obj, DictConfig):
         return OmegaConf.to_container(obj)  # type: ignore
