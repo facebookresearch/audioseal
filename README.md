@@ -57,8 +57,6 @@ You can find all the model checkpoints on the [Hugging Face Hub](https://hugging
 
 Note that the message is optional and has no influence on the detection output. It may be used to identify a model version for instance (up to $2**16=65536$ possible choices).
 
-**Note**: We are working to release the training code for anyone wants to build their own watermarker. Stay tuned !
-
 # :abacus: Usage
 
 Audioseal provides a simple API to watermark and detect the watermarks from an audio sample. Example usage:
