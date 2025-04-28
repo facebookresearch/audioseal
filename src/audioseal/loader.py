@@ -6,20 +6,11 @@
 
 
 import os
+import pickle
 from dataclasses import fields
 from hashlib import sha1
 from pathlib import Path
-from typing import (  # type: ignore[attr-defined]
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union, cast
 from urllib.parse import urlparse  # noqa: F401
 
 import torch
@@ -68,12 +59,24 @@ def _get_cache_dir(env_names: List[str]):
     return cache_dir
 
 
+def _safe_load_checkpoint(model_path: Union[str, Path], device: Union[str, torch.device] = "cpu"):
+    try:
+        ckpt = torch.load(model_path, map_location=device, weights_only=False)
+    except pickle.UnpicklingError as _:
+        # This happens in torch 2.6+ . We make a quick hack to allow omegaconf DictConfig
+        # to be passed as a global
+        import omegaconf
+
+        torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
+        ckpt = torch.load(model_path, map_location=device, weights_only=False)
+    return ckpt
+
 def load_model_checkpoint(
     model_path: Union[Path, str],
     device: Union[str, torch.device] = "cpu",
 ):
     if Path(model_path).is_file():
-        return torch.load(model_path, map_location=device)
+        return _safe_load_checkpoint(model_path, device=device)
 
     cache_dir = _get_cache_dir(
         ["AUDIOSEAL_CACHE_DIR", "AUDIOCRAFT_CACHE_DIR", "XDG_CACHE_HOME"]
@@ -86,7 +89,7 @@ def load_model_checkpoint(
             str(model_path), model_dir=cache_dir, map_location=device, file_name=hash_
         )
     elif str(model_path).startswith("facebook/audioseal/"):
-        hf_filename = str(model_path)[len("facebook/audioseal/") :]
+        hf_filename = str(model_path)[len("facebook/audioseal/"):]
 
         try:
             from huggingface_hub import hf_hub_download
@@ -103,7 +106,7 @@ def load_model_checkpoint(
             library_name="audioseal",
             library_version=audioseal.__version__,
         )
-        return torch.load(file, map_location=device)
+        return _safe_load_checkpoint(file, device=device)
     else:
         raise ModelLoadError(f"Path or uri {model_path} is unknown or does not exist")
 
