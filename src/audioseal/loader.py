@@ -59,7 +59,9 @@ def _get_cache_dir(env_names: List[str]):
     return cache_dir
 
 
-def _safe_load_checkpoint(model_path: Union[str, Path], device: Union[str, torch.device] = "cpu"):
+def _safe_load_checkpoint(
+    model_path: Union[str, Path], device: Union[str, torch.device] = "cpu"
+):
     try:
         ckpt = torch.load(model_path, map_location=device, weights_only=False)
     except pickle.UnpicklingError as _:
@@ -70,6 +72,7 @@ def _safe_load_checkpoint(model_path: Union[str, Path], device: Union[str, torch
         torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
         ckpt = torch.load(model_path, map_location=device, weights_only=False)
     return ckpt
+
 
 def load_model_checkpoint(
     model_path: Union[Path, str],
@@ -89,16 +92,16 @@ def load_model_checkpoint(
             str(model_path), model_dir=cache_dir, map_location=device, file_name=hash_
         )
     elif str(model_path).startswith("facebook/audioseal/"):
-        hf_filename = str(model_path)[len("facebook/audioseal/"):]
+        hf_filename = str(model_path)[len("facebook/audioseal/") :]
 
         try:
             from huggingface_hub import hf_hub_download
-        except ModuleNotFoundError:
-            print(
+        except ModuleNotFoundError as ex:
+            raise ModelLoadError(
                 f"The model path {model_path} seems to be a direct HF path, "
                 "but you do not install Huggingface_hub. Install with for example "
                 "`pip install huggingface_hub` to use this feature."
-            )
+            ) from ex
         file = hf_hub_download(
             repo_id="facebook/audioseal",
             filename=hf_filename,
@@ -190,7 +193,7 @@ class AudioSeal:
 
         # remove attributes not related to the model_type
         result_config = {}
-        assert config, f"Empty config"
+        assert config, "Empty config"
         for field in fields(config_type):
             if field.name in config:
                 result_config[field.name] = config[field.name]

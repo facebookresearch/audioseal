@@ -38,7 +38,9 @@ def test_detector(example_audio):
     watermarked_audio = audio + watermark
 
     detector = AudioSeal.load_detector(("audioseal_detector_16bits"))
-    result, message = detector.detect_watermark(watermarked_audio, sample_rate=sr)  # noqa
+    result, message = detector.detect_watermark(
+        watermarked_audio, sample_rate=sr
+    )  # noqa
 
     # Due to non-deterministic decoding, messages are not always the same as message
     print(f"\nOriginal message: {secret_message}")
@@ -54,10 +56,21 @@ def test_detector(example_audio):
     assert result < 0.5
 
 
-def test_loading_from_hf(example_audio):
-    audio, sr = example_audio
+def test_loading_from_hf():
+    generator = AudioSeal.load_generator(
+        "facebook/audioseal/generator_base.pth", nbits=16
+    )
 
-    generator = AudioSeal.load_generator("facebook/audioseal/generator_base.pth", nbits=16)
-    detector = AudioSeal.load_detector("facebook/audioseal/detector_base.pth", nbits=16)
+    assert isinstance(generator, AudioSealWM)
 
-    assert isinstance(generator, AudioSealWM) and isinstance(detector, AudioSealDetector)
+
+@pytest.mark.parametrize(
+    "detector_name", ["facebook/audioseal/detector_base.pth", "llama4_detector_16bits"]
+)
+def test_loading_detectors(detector_name):
+    if detector_name.endswith(".pth"):
+        detector = AudioSeal.load_detector(detector_name, nbits=16)
+    else:
+        detector = AudioSeal.load_detector(detector_name)
+
+    assert isinstance(detector, AudioSealDetector)
