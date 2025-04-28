@@ -7,10 +7,11 @@
 
 import os
 import pickle
+import re
 from dataclasses import fields
 from hashlib import sha1
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, TypeVar, Union, cast
 from urllib.parse import urlparse  # noqa: F401
 
 import torch
@@ -30,6 +31,37 @@ AudioSealT = TypeVar("AudioSealT", AudioSealWMConfig, AudioSealDetectorConfig)
 
 class ModelLoadError(RuntimeError):
     """Raised when the model loading fails"""
+
+
+def _convert_model_state_dict(
+    state_dict: Dict[str, Any], key_map: Mapping[str, str]
+) -> Dict[str, Any]:
+    """Convert a model state dictionary to fairseq2.
+
+    :param state_dict:
+        The original model state dictionary.
+    :param key_map:
+        A map of regex patterns to fairseq2 model keys.
+
+    :returns:
+        A converted model state dictionary that is compatible with fairseq2.
+    """
+    new_state_dict = {}
+
+    def get_new_key(old_key: str) -> str:
+        for old_pattern, replacement in key_map.items():
+            if (new_key := re.sub(old_pattern, replacement, old_key)) != old_key:
+                return new_key
+
+        return old_key
+
+    # Convert module keys from fairseq to fairseq2.
+    for old_key in state_dict.keys():
+        new_key = get_new_key(old_key)
+
+        new_state_dict[new_key] = state_dict[old_key]
+
+    return new_state_dict
 
 
 def _get_path_from_env(var_name: str) -> Optional[Path]:
@@ -72,6 +104,24 @@ def _safe_load_checkpoint(
         torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
         ckpt = torch.load(model_path, map_location=device, weights_only=False)
     return ckpt
+
+
+def _update_state_dict(model: torch.nn.Module, state_dict: Dict[str, Any]):
+    def keymap(state_dict: Dict[str, Any]) -> Dict[str, Any]:
+        key_map = {
+            r"parametrizations.weight.original0": r"weight_g",
+            r"parametrizations.weight.original1": r"weight_v",
+        }
+        return _convert_model_state_dict(state_dict, key_map)
+
+    try:
+        model.load_state_dict(state_dict)
+    except RuntimeError as _:
+        # This happens when loading AudioSeal checkpoint trained on newer torch
+        # in an application using older torch version. Make the conversion of
+        # the state dict
+        state_dict = keymap(state_dict)
+        model.load_state_dict(state_dict)
 
 
 def load_model_checkpoint(
