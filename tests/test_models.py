@@ -7,10 +7,10 @@
 
 import urllib
 
-import torch
-
 import pytest
+import torch
 import torchaudio
+
 from audioseal import AudioSeal
 from audioseal.models import AudioSealDetector, AudioSealWM
 
