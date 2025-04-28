@@ -24,6 +24,7 @@ from urllib.parse import urlparse  # noqa: F401
 
 import torch
 from omegaconf import DictConfig, OmegaConf
+import pickle
 
 import audioseal
 from audioseal.builder import (
@@ -73,7 +74,15 @@ def load_model_checkpoint(
     device: Union[str, torch.device] = "cpu",
 ):
     if Path(model_path).is_file():
-        return torch.load(model_path, map_location=device, weights_only=False)
+        try:
+            return torch.load(model_path, map_location=device, weights_only=False)
+        except pickle.UnpicklingError as _:
+            # This happens in torch 2.6+ . We make a quick hack to allow omegaconf DictConfig
+            # to be passed as a global
+            import omegaconf
+            
+            with torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig]):
+                return torch.load(model_path, map_location=device, weights_only=False)
 
     cache_dir = _get_cache_dir(
         ["AUDIOSEAL_CACHE_DIR", "AUDIOCRAFT_CACHE_DIR", "XDG_CACHE_HOME"]
