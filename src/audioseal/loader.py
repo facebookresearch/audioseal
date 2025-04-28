@@ -6,33 +6,20 @@
 
 
 import os
+import pickle
 from dataclasses import fields
 from hashlib import sha1
 from pathlib import Path
-from typing import (  # type: ignore[attr-defined]
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import (Any, Dict, List, Optional,  # type: ignore[attr-defined]
+                    Tuple, Type, TypeVar, Union, cast)
 from urllib.parse import urlparse  # noqa: F401
 
 import torch
 from omegaconf import DictConfig, OmegaConf
-import pickle
 
 import audioseal
-from audioseal.builder import (
-    AudioSealDetectorConfig,
-    AudioSealWMConfig,
-    create_detector,
-    create_generator,
-)
+from audioseal.builder import (AudioSealDetectorConfig, AudioSealWMConfig,
+                               create_detector, create_generator)
 from audioseal.models import AudioSealDetector, AudioSealWM
 
 AudioSealT = TypeVar("AudioSealT", AudioSealWMConfig, AudioSealDetectorConfig)
