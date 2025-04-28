@@ -73,7 +73,7 @@ def load_model_checkpoint(
     device: Union[str, torch.device] = "cpu",
 ):
     if Path(model_path).is_file():
-        return torch.load(model_path, map_location=device)
+        return torch.load(model_path, map_location=device, weights_only=False)
 
     cache_dir = _get_cache_dir(
         ["AUDIOSEAL_CACHE_DIR", "AUDIOCRAFT_CACHE_DIR", "XDG_CACHE_HOME"]
