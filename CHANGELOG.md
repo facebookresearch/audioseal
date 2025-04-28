@@ -4,7 +4,12 @@ All notable changes to AudioSeal are documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
-## [0.1.3] - 2024-06-24
+## [0.1.5] - 2025-04-29
+
+- Fix bugs in loading model in new PyTorch (2.6+)
+- Add new detector for Llama4
+
+## [0.1.4] - 2024-06-24
 
 - Update scripts to new training code
 - Fix bugs in loading custom fine-tuned model (https://github.com/facebookresearch/audioseal/issues/37)
