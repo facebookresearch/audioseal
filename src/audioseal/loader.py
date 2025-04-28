@@ -265,7 +265,7 @@ class AudioSeal:
         )
 
         model = create_generator(config)
-        model.load_state_dict(checkpoint)
+        _update_state_dict(model, checkpoint)
         return model
 
     @staticmethod
@@ -279,5 +279,5 @@ class AudioSeal:
             nbits=nbits,
         )
         model = create_detector(config)
-        model.load_state_dict(checkpoint)
+        _update_state_dict(model, checkpoint)
         return model
