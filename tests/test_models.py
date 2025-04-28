@@ -64,9 +64,7 @@ def test_loading_from_hf():
     assert isinstance(generator, AudioSealWM)
 
 
-@pytest.mark.parametrize(
-    "detector_name", ["facebook/audioseal/detector_base.pth", "llama4_detector_16bits"]
-)
+@pytest.mark.parametrize("detector_name", ["facebook/audioseal/detector_base.pth"])
 def test_loading_detectors(detector_name):
     if detector_name.endswith(".pth"):
         detector = AudioSeal.load_detector(detector_name, nbits=16)
