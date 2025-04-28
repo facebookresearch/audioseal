@@ -10,17 +10,7 @@ import pickle
 from dataclasses import fields
 from hashlib import sha1
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union, cast
 from urllib.parse import urlparse  # noqa: F401
 
 import torch
