@@ -75,14 +75,15 @@ def load_model_checkpoint(
 ):
     if Path(model_path).is_file():
         try:
-            return torch.load(model_path, map_location=device, weights_only=False)
+            ckpt = torch.load(model_path, map_location=device, weights_only=False)
         except pickle.UnpicklingError as _:
             # This happens in torch 2.6+ . We make a quick hack to allow omegaconf DictConfig
             # to be passed as a global
             import omegaconf
-            
-            with torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig]):
-                return torch.load(model_path, map_location=device, weights_only=False)
+
+            torch.serialization.add_safe_globals([omegaconf.dictconfig.DictConfig])
+            ckpt = torch.load(model_path, map_location=device, weights_only=False)
+        return ckpt
 
     cache_dir = _get_cache_dir(
         ["AUDIOSEAL_CACHE_DIR", "AUDIOCRAFT_CACHE_DIR", "XDG_CACHE_HOME"]
@@ -95,7 +96,7 @@ def load_model_checkpoint(
             str(model_path), model_dir=cache_dir, map_location=device, file_name=hash_
         )
     elif str(model_path).startswith("facebook/audioseal/"):
-        hf_filename = str(model_path)[len("facebook/audioseal/") :]
+        hf_filename = str(model_path)[len("facebook/audioseal/"):]
 
         try:
             from huggingface_hub import hf_hub_download
