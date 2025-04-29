@@ -124,6 +124,54 @@ def _update_state_dict(model: torch.nn.Module, state_dict: Dict[str, Any]):
         model.load_state_dict(state_dict)
 
 
+def _load_hf_model_checkpoint(
+    model_uri: str,
+    cache_dir: Path,
+    device: Union[str, torch.device] = "cpu",
+):
+    # Only load from known HF repos
+    hf_repos = ["facebook/audioseal", "meta-adtp/audioseal"]
+
+    for repo in hf_repos:
+        if model_uri.startswith(repo):
+            hf_filename = model_uri[len(repo) + 1 :]
+            try:
+                import huggingface_hub as hf_hub
+
+                try:
+                    file = hf_hub.hf_hub_download(
+                        repo_id=repo,
+                        repo_type="model",
+                        filename=hf_filename,
+                        local_dir=cache_dir,
+                        library_name="audioseal",
+                        library_version=audioseal.__version__,
+                    )
+                except Exception as _:
+
+                    # Most likely we access a gated repo, try with token
+                    file = hf_hub.hf_hub_download(
+                        repo_id=repo,
+                        repo_type="model",
+                        filename=hf_filename,
+                        local_dir=cache_dir,
+                        library_name="audioseal",
+                        token=True,
+                        library_version=audioseal.__version__,
+                    )
+
+                return _safe_load_checkpoint(file, device=device)
+
+            except ModuleNotFoundError as ex:
+                raise ModelLoadError(
+                    f"The model path {model_uri} seems to be a direct HF path, "
+                    "but you do not install Huggingface_hub. Install with for example "
+                    "`pip install huggingface_hub` to use this feature."
+                ) from ex
+
+    return None
+
+
 def load_model_checkpoint(
     model_path: Union[Path, str],
     device: Union[str, torch.device] = "cpu",
@@ -135,31 +183,20 @@ def load_model_checkpoint(
         ["AUDIOSEAL_CACHE_DIR", "AUDIOCRAFT_CACHE_DIR", "XDG_CACHE_HOME"]
     )
     parts = urlparse(str(model_path))
-    if parts.scheme == "https":
 
+    # Load HF model
+    model = _load_hf_model_checkpoint(
+        str(model_path), cache_dir=cache_dir, device=device
+    )
+    if model is not None:
+        return model
+
+    # Load external public model
+    if parts.scheme == "https":
         hash_ = sha1(parts.path.encode()).hexdigest()[:24]
         return torch.hub.load_state_dict_from_url(
             str(model_path), model_dir=cache_dir, map_location=device, file_name=hash_
         )
-    elif str(model_path).startswith("facebook/audioseal/"):
-        hf_filename = str(model_path)[len("facebook/audioseal/") :]
-
-        try:
-            from huggingface_hub import hf_hub_download
-        except ModuleNotFoundError as ex:
-            raise ModelLoadError(
-                f"The model path {model_path} seems to be a direct HF path, "
-                "but you do not install Huggingface_hub. Install with for example "
-                "`pip install huggingface_hub` to use this feature."
-            ) from ex
-        file = hf_hub_download(
-            repo_id="facebook/audioseal",
-            filename=hf_filename,
-            cache_dir=cache_dir,
-            library_name="audioseal",
-            library_version=audioseal.__version__,
-        )
-        return _safe_load_checkpoint(file, device=device)
     else:
         raise ModelLoadError(f"Path or uri {model_path} is unknown or does not exist")
 
