@@ -136,21 +136,38 @@ def _load_hf_model_checkpoint(
         if model_uri.startswith(repo):
             hf_filename = model_uri[len(repo) + 1 :]
             try:
-                from huggingface_hub import hf_hub_download
+                import huggingface_hub as hf_hub
+
+                try:
+                    file = hf_hub.hf_hub_download(
+                        repo_id=repo,
+                        repo_type="model",
+                        filename=hf_filename,
+                        local_dir=cache_dir,
+                        library_name="audioseal",
+                        library_version=audioseal.__version__,
+                    )
+                except Exception as _:
+
+                    # Most likely we access a gated repo, try with token
+                    file = hf_hub.hf_hub_download(
+                        repo_id=repo,
+                        repo_type="model",
+                        filename=hf_filename,
+                        local_dir=cache_dir,
+                        library_name="audioseal",
+                        token=True,
+                        library_version=audioseal.__version__,
+                    )
+
+                return _safe_load_checkpoint(file, device=device)
+
             except ModuleNotFoundError as ex:
                 raise ModelLoadError(
                     f"The model path {model_uri} seems to be a direct HF path, "
                     "but you do not install Huggingface_hub. Install with for example "
                     "`pip install huggingface_hub` to use this feature."
                 ) from ex
-            file = hf_hub_download(
-                repo_id=repo,
-                filename=hf_filename,
-                cache_dir=cache_dir,
-                library_name="audioseal",
-                library_version=audioseal.__version__,
-            )
-            return _safe_load_checkpoint(file, device=device)
 
     return None
 
