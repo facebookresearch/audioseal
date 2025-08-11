@@ -117,7 +117,9 @@ class AudioSealWM(torch.nn.Module):
                 else:
                     message = self.message.to(device=x.device)
             else:
-                message = message.to(device=x.device)
+                if message.ndim == 1:
+                    message = message.unsqueeze(0).repeat(x.shape[0], 1)
+                message = message.to(device=x.device)   # type: ignore
 
             hidden = self.msg_processor(hidden, message)
 
