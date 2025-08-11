@@ -119,7 +119,7 @@ class AudioSealWM(torch.nn.Module):
             else:
                 if message.ndim == 1:
                     message = message.unsqueeze(0).repeat(x.shape[0], 1)
-                message = message.to(device=x.device)   # type: ignore
+                message = message.to(device=x.device)  # type: ignore
 
             hidden = self.msg_processor(hidden, message)
 
@@ -171,6 +171,7 @@ class AudioSealDetector(torch.nn.Module):
         x: torch.Tensor,
         sample_rate: Optional[int] = None,
         message_threshold: float = 0.5,
+        detection_threshold: float = 0.5,
     ) -> Tuple[float, torch.Tensor]:
         """
         A convenience function that returns a probability of an audio being watermarked,
@@ -186,10 +187,10 @@ class AudioSealDetector(torch.nn.Module):
             logger.warning(COMPATIBLE_WARNING)
             sample_rate = 16_000
         result, message = self.forward(x, sample_rate=sample_rate)  # b x 2+nbits
-        detected = (
-            torch.count_nonzero(torch.gt(result[:, 1, :], 0.5)) / result.shape[-1]
+        detect_prob = (
+            torch.count_nonzero(torch.gt(result[:, 1, :], detection_threshold), dim=-1)
+            / result.shape[-1]
         )
-        detect_prob = detected.cpu().item()  # type: ignore
         message = torch.gt(message, message_threshold).int()
         return detect_prob, message
 

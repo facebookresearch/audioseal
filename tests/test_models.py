@@ -25,20 +25,22 @@ def example_audio(tmp_path):
     wav, sr = torchaudio.load(tmp_path / "test.wav")
 
     # Add batch dimension
-    yield wav.unsqueeze(0), sr
+    yield wav.expand(2, 1, -1), sr
 
 
 def test_detector(example_audio):
     audio, sr = example_audio
     model = AudioSeal.load_generator("audioseal_wm_16bits")
+    model.eval()
 
     secret_message = torch.randint(0, 2, (1, 16), dtype=torch.int32)
-    watermark = model(audio, sample_rate=sr, message=secret_message, alpha=0.8)
+    watermark = model.get_watermark(audio, sample_rate=sr, message=secret_message)
 
     watermarked_audio = audio + watermark
 
     detector = AudioSeal.load_detector(("audioseal_detector_16bits"))
-    result, message = detector.detect_watermark(
+    detector.eval()
+    results, message = detector.detect_watermark(
         watermarked_audio, sample_rate=sr
     )  # noqa
 
@@ -49,11 +51,12 @@ def test_detector(example_audio):
         "Matching bits in decoded and original messages: "
         f"{torch.count_nonzero(torch.eq(message, secret_message)).item()}\n"
     )
-    assert result > 0.5
+    assert torch.count_nonzero(torch.eq(message, secret_message)).item() > 20
+    assert torch.all(results > 0.5).item()
 
     # Try to detect the unwatermarked audio
-    result, _ = detector.detect_watermark(audio, sample_rate=sr)  # noqa
-    assert result < 0.5
+    results, _ = detector.detect_watermark(audio, sample_rate=sr)  # noqa
+    assert torch.all(results < 0.5).item()
 
 
 def test_loading_from_hf():
