@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import julius
 import torch
@@ -172,7 +172,7 @@ class AudioSealDetector(torch.nn.Module):
         sample_rate: Optional[int] = None,
         message_threshold: float = 0.5,
         detection_threshold: float = 0.5,
-    ) -> Tuple[float, torch.Tensor]:
+    ) -> Union[Tuple[float, torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]:
         """
         A convenience function that returns a probability of an audio being watermarked,
         together with its message in n-bits (binary) format. If the audio is not watermarked,
@@ -191,6 +191,8 @@ class AudioSealDetector(torch.nn.Module):
             torch.count_nonzero(torch.gt(result[:, 1, :], detection_threshold), dim=-1)
             / result.shape[-1]
         )
+        if x.shape[0] == 1:
+            detect_prob = detect_prob.detach().cpu().item()
         message = torch.gt(message, message_threshold).int()
         return detect_prob, message
 
