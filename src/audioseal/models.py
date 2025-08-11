@@ -192,7 +192,7 @@ class AudioSealDetector(torch.nn.Module):
             / result.shape[-1]
         )
         if x.shape[0] == 1:
-            detect_prob = detect_prob.detach().cpu().item()
+            detect_prob = detect_prob.detach().cpu().item()  # type: ignore
         message = torch.gt(message, message_threshold).int()
         return detect_prob, message
 
