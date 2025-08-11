@@ -21,6 +21,8 @@ import audioseal
 from audioseal.builder import (
     AudioSealDetectorConfig,
     AudioSealWMConfig,
+    DataType,
+    Device,
     create_detector,
     create_generator,
 )
@@ -293,6 +295,8 @@ class AudioSeal:
     def load_generator(
         model_card_or_path: str,
         nbits: Optional[int] = None,
+        device: Optional[Device] = None,
+        dtype: Optional[DataType] = None,
     ) -> AudioSealWM:
         """Load the AudioSeal generator from the model card"""
         checkpoint, config = AudioSeal.parse_model(
@@ -301,7 +305,7 @@ class AudioSeal:
             nbits=nbits,
         )
 
-        model = create_generator(config)
+        model = create_generator(config, device=device, dtype=dtype)
         _update_state_dict(model, checkpoint)
         return model
 
@@ -309,12 +313,14 @@ class AudioSeal:
     def load_detector(
         model_card_or_path: str,
         nbits: Optional[int] = None,
+        device: Optional[Device] = None,
+        dtype: Optional[DataType] = None,
     ) -> AudioSealDetector:
         checkpoint, config = AudioSeal.parse_model(
             model_card_or_path,
             AudioSealDetectorConfig,
             nbits=nbits,
         )
-        model = create_detector(config)
+        model = create_detector(config, device=device, dtype=dtype)
         _update_state_dict(model, checkpoint)
         return model
