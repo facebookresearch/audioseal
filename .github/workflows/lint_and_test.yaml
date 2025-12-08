@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8"]
+        python-version: ["3.10"]
 
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
           cache: "pip"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip 
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
       - name: Lint with flake8
@@ -38,7 +38,7 @@ jobs:
       - name: isort
         run: isort --check --diff .
       - name: mypy
-        run: mypy --install-types --non-interactive ./ --cache-dir=.mypy_cache/
+        run: mypy --python-version=${{ matrix.python-version }} --install-types --non-interactive ./ --cache-dir=.mypy_cache/
 
   unit_test:
     runs-on: ubuntu-latest
@@ -60,6 +60,7 @@ jobs:
           python -m pip install --upgrade pip
           # We also test that pyproject.toml and requirements*.txt are synced
           pip install -r requirements-dev.txt
+          pip install einops
           pip install -e .
       - name: pytest_unit
         run: pytest -s -v tests/test_models.py
@@ -82,7 +83,7 @@ jobs:
         run: |
           sudo apt-get install libsndfile1
           python -m pip install --upgrade pip
-          pip install torch==1.13.0 torchaudio==0.13.0 func_argparse soundfile pytest omegaconf numpy julius huggingface_hub
+          pip install torch==1.13.0 torchaudio==0.13.0 func_argparse soundfile pytest omegaconf numpy huggingface_hub
           pip install --no-deps -e .
       - name: pytest_unit
         run: pytest -s -v tests/test_models.py

@@ -4,15 +4,37 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import sys
 from dataclasses import asdict, dataclass, field, is_dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from omegaconf import DictConfig, OmegaConf
 from torch import device, dtype
 from typing_extensions import TypeAlias
 
-from audioseal.libs import audiocraft
-from audioseal.models import AudioSealDetector, AudioSealWM, MsgProcessor
+from audioseal.models import (
+    AudioSealDetector,
+    AudioSealWM,
+    MsgProcessor,
+    NormalizationProcessor,
+)
+
+# We use different SEANet implementations based on Python version.
+# For 3.10 and above: Moshi's SEANetEncoder and SEANetDecoder.
+# For 3.9 and below: Audiocraft's SEANetEncoder and SEANetDecoder..
+if sys.version_info >= (3, 10):
+    from audioseal.libs.moshi.modules.seanet import (
+        SEANetDecoder,
+        SEANetEncoder,
+        SEANetEncoderKeepDimension,
+    )
+else:
+    from audioseal.libs.audiocraft.modules.seanet import (
+        SEANetDecoder,
+        SEANetEncoder,
+        SEANetEncoderKeepDimension,
+    )
+
 
 Device: TypeAlias = device
 
@@ -63,6 +85,7 @@ class AudioSealWMConfig:
     nbits: int
     seanet: SEANetConfig
     decoder: DecoderConfig
+    normalizer: bool = False
 
 
 @dataclass
@@ -70,6 +93,7 @@ class AudioSealDetectorConfig:
     nbits: int
     seanet: SEANetConfig
     detector: DetectorConfig = field(default_factory=lambda: DetectorConfig())
+    normalizer: bool = False
 
 
 def as_dict(obj: Any) -> Dict[str, Any]:
@@ -93,17 +117,25 @@ def create_generator(
 
     #  Currently the encoder hparams are the same as
     # SEANet, but this can be changed in the future.
-    encoder = audiocraft.modules.SEANetEncoder(**as_dict(config.seanet))
+    seanet_config = config.seanet
+
+    encoder_config = as_dict(seanet_config)
+    decoder_config = {**as_dict(config.seanet), **as_dict(config.decoder)}
+
+    encoder = SEANetEncoder(**encoder_config)
     encoder = encoder.to(device=device, dtype=dtype)
 
-    decoder_config = {**as_dict(config.seanet), **as_dict(config.decoder)}
-    decoder = audiocraft.modules.SEANetDecoder(**as_dict(decoder_config))
+    decoder = SEANetDecoder(**decoder_config)
     decoder = decoder.to(device=device, dtype=dtype)
 
-    msgprocessor = MsgProcessor(nbits=config.nbits, hidden_size=config.seanet.dimension)
+    msgprocessor = MsgProcessor(
+        nbits=config.nbits, hidden_size=seanet_config.dimension)
     msgprocessor = msgprocessor.to(device=device, dtype=dtype)
 
-    return AudioSealWM(encoder=encoder, decoder=decoder, msg_processor=msgprocessor)
+    normalizer = NormalizationProcessor() if getattr(
+        config, "normalizer", False) else None
+
+    return AudioSealWM(encoder=encoder, decoder=decoder, msg_processor=msgprocessor, normalizer=normalizer)
 
 
 def create_detector(
@@ -112,7 +144,15 @@ def create_detector(
     device: Optional[Device] = None,
     dtype: Optional[DataType] = None,
 ) -> AudioSealDetector:
-    detector_config = {**as_dict(config.seanet), **as_dict(config.detector)}
-    detector = AudioSealDetector(nbits=config.nbits, **detector_config)
+
+    _detector = {"output_dim": 32}
+    detector_config = {**as_dict(config.seanet), **_detector}
+
+    encoder = SEANetEncoderKeepDimension(**detector_config)
+    normalizer = NormalizationProcessor() if getattr(
+        config, "normalizer", False) else None
+
+    detector = AudioSealDetector(
+        encoder=encoder, normalizer=normalizer, nbits=config.nbits)
     detector = detector.to(device=device, dtype=dtype)
     return detector

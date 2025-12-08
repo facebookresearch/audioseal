@@ -40,9 +40,7 @@ def test_detector(example_audio):
 
     detector = AudioSeal.load_detector(("audioseal_detector_16bits"))
     detector.eval()
-    results, message = detector.detect_watermark(
-        watermarked_audio, sample_rate=sr
-    )  # noqa
+    results, message = detector.detect_watermark(watermarked_audio, sample_rate=sr)  # noqa
 
     # Due to non-deterministic decoding, messages are not always the same as message
     print(f"\nOriginal message: {secret_message}")
@@ -60,15 +58,31 @@ def test_detector(example_audio):
 
 
 def test_loading_from_hf():
-    generator = AudioSeal.load_generator(
-        "facebook/audioseal/generator_base.pth", nbits=16
-    )
+    generator = AudioSeal.load_generator("facebook/audioseal/generator_base.pth", nbits=16)
+    detector = AudioSeal.load_detector("facebook/audioseal/detector_base.pth", nbits=16)
 
-    assert isinstance(generator, AudioSealWM)
+    assert isinstance(generator, AudioSealWM) and isinstance(detector, AudioSealDetector)
 
 
-@pytest.mark.parametrize("detector_name", ["facebook/audioseal/detector_base.pth"])
-def test_loading_detectors(detector_name):
-    detector = AudioSeal.load_detector(detector_name, nbits=16)
+def test_jit(example_audio, tmp_path):
+    # Test that the audioseal model can be torchscripted
+    model = AudioSeal.load_generator("audioseal_wm_16bits")
+    model.eval()
+    scripted_model = torch.jit.script(model)
+    assert isinstance(scripted_model, torch.jit.ScriptModule)
+    scripted_model.save(tmp_path / "audioseal_wm_16bits.jit")
+    del scripted_model
 
-    assert isinstance(detector, AudioSealDetector)
+    detector = AudioSeal.load_detector("audioseal_detector_16bits")
+    scripted_detector = torch.jit.script(detector)
+    scripted_detector.save(tmp_path / "audioseal_detector_16bits.jit")
+    del scripted_detector
+
+    jit_generator = torch.jit.load(tmp_path / "audioseal_wm_16bits.jit")
+    jit_detector = torch.jit.load(tmp_path / "audioseal_detector_16bits.jit")
+    audio, _ = example_audio
+
+    wm_audio = jit_generator(audio, alpha=0.8)
+    result, _ = jit_detector.detect_watermark(wm_audio)
+    assert torch.all(result > 0.5).item(), "JIT model failed to detect watermark"
+

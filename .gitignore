@@ -107,16 +107,3 @@ cython_debug/
 
 # local training outputs
 outputs/*
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Temporary Test Files
-examples/test.wav
-examples/kaggle

@@ -5,21 +5,29 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-from typing import Optional, Tuple, Union
+import sys
+from typing import Optional, Tuple
 
-import julius
 import torch
 
-from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
+if sys.version_info >= (3, 10):
+    from audioseal.libs.moshi.modules.seanet import SEANetEncoderKeepDimension
+else:
+    from audioseal.libs.audiocraft.modules.seanet import SEANetEncoderKeepDimension
+
 
 logger = logging.getLogger("Audioseal")
 
-COMPATIBLE_WARNING = """
-AudioSeal is designed to work at a sample rate 16khz.
-Implicit sampling rate usage is deprecated and will be removed in future version.
-To remove this warning please add this argument to the function call:
-sample_rate = your_sample_rate
-"""
+
+SAMPLE_RATE_WARN = (
+    "Starting from AudioSeal 1.0, audio is not resampled internally to"
+    " 16kHz or some predefined sample rates. The user is responsible for"
+    " providing the correct sample rate to the model. Each model has a"
+    " range of sample rates it supports, and this is specified in the"
+    " model card. If the sample rate is not specified, the model is "
+    " assumed to be trained on 16kHz audio.\n"
+    "If you specify a sample rate, this will be ignored."
+)
 
 
 class MsgProcessor(torch.nn.Module):
@@ -45,7 +53,8 @@ class MsgProcessor(torch.nn.Module):
             msg: The secret message, size: batch x k
         """
         # create indices to take from embedding layer
-        indices = 2 * torch.arange(msg.shape[-1]).to(msg.device)  # k: 0 2 4 ... 2k
+        # k: 0 2 4 ... 2k
+        indices = 2 * torch.arange(msg.shape[-1]).to(hidden.device)
         indices = indices.repeat(msg.shape[0], 1)  # b x k
         indices = (indices + msg).long()
         msg_aux = self.msg_processor(indices)  # b x k -> b x k x h
@@ -55,6 +64,173 @@ class MsgProcessor(torch.nn.Module):
         )  # b x h -> b x h x t/f
         hidden = hidden + msg_aux  # -> b x h x t/f
         return hidden
+
+
+class NormalizationProcessor:
+    """
+    A class for normalizing audio signals, ensuring they fit within a specified envelope
+    and achieving consistent loudness levels.
+
+    Attributes:
+        window_size (int): The size of the window for processing the signal.
+        reference_rms (float): The reference RMS value for loudness normalization.
+    """
+
+    def __init__(self, window_size: int = 5, reference_rms: float = 0.1):
+        """
+        Initializes the NormalizationProcessor with the given window size and reference RMS value.
+
+        Args:
+            window_size (int): The size of the window for processing the signal.
+            reference_rms (float): The reference RMS value for loudness normalization.
+        """
+        self.window_size = window_size
+        self.reference_rms = reference_rms
+
+    @torch.jit.export
+    def compute_rms(self, signal: torch.Tensor) -> torch.Tensor:
+        """
+        Computes the root mean square (RMS) of the given signal.
+
+        Args:
+            signal (torch.Tensor): The input signal tensor of shape (batch, channels, timesteps).
+
+        Returns:
+            torch.Tensor: The RMS value of the signal of shape (batch, channels, 1).
+        """
+        return torch.sqrt(
+            torch.mean(signal**2, dim=-1, keepdim=True) + 1e-8
+        )  # Adding epsilon for numerical stability
+
+    def fit_inside_envelope(
+        self, wav1: torch.Tensor, wav2: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Normalizes wav2 to fit inside the envelope defined by wav1.
+
+        Args:
+            wav1 (torch.Tensor): The reference signal tensor of shape (batch, channels, timesteps).
+            wav2 (torch.Tensor): The signal tensor to be normalized of shape (batch, channels, timesteps).
+
+        Returns:
+            torch.Tensor: The normalized wav2 tensor of shape (batch, channels, timesteps).
+        """
+        wav1 = wav1.clone()
+        wav2 = wav2.clone()
+        # batch size, number of channels, number of samples
+        bsz, channel, samples = wav1.shape
+
+        # Create a Hann window for smooth transitions
+        hann_window = torch.hann_window(self.window_size, periodic=False).to(
+            wav1.device
+        )
+        normalized_wav2 = torch.zeros_like(wav2)
+
+        overlap = self.window_size // 2
+        num_windows = (samples - self.window_size + overlap) // overlap
+
+        # Unfold the signals into overlapping windows
+        # shape: (batch, channels, num_windows, window_size)
+        unfolded_wav1 = wav1.unfold(-1, self.window_size, overlap)
+        # shape: (batch, channels, num_windows, window_size)
+        unfolded_wav2 = wav2.unfold(-1, self.window_size, overlap)
+
+        # Compute RMS for each window
+        rms_wav1 = torch.sqrt(torch.mean(
+            unfolded_wav1**2, dim=-1, keepdim=True))
+        rms_wav2 = torch.sqrt(torch.mean(
+            unfolded_wav2**2, dim=-1, keepdim=True))
+
+        # Calculate the gain needed to fit wav2 inside wav1's envelope
+        gain = rms_wav1 / (rms_wav2 + 1e-8)
+        gain = torch.clamp(gain, min=1e-2, max=1.0)
+
+        hann_window_portion = hann_window.view(1, 1, -1)
+        normalized_segment = unfolded_wav2 * gain
+        normalized_segment *= hann_window_portion
+
+        # Reconstruct the signal from the normalized windows
+        normalized_segment = normalized_segment.swapaxes(-1, -2)
+        fold = torch.nn.Fold((1, normalized_wav2.shape[-1]), kernel_size=(1, self.window_size), stride=(1, overlap))
+        for i_batch in range(bsz):
+            for i_channel in range(channel):
+                normalized_wav2[i_batch, i_channel, :] = fold(normalized_segment[i_batch, i_channel, :, :].squeeze(0))
+
+        # Handle the last segment
+        remaining_samples = samples - num_windows * overlap
+        if remaining_samples > 0:
+            start = num_windows * overlap
+            window_wav1 = wav1[:, :, start:samples]
+            window_wav2 = wav2[:, :, start:samples]
+            rms_wav1 = self.compute_rms(window_wav1)
+            rms_wav2 = self.compute_rms(window_wav2)
+            gain = rms_wav1 / (rms_wav2 + 1e-8)
+            gain = torch.clamp(gain, min=1e-2, max=1.0)
+            hann_window_portion = hann_window[:remaining_samples]
+            normalized_segment = window_wav2 * gain
+            normalized_segment *= hann_window_portion.unsqueeze(0).unsqueeze(0)
+            normalized_wav2[:, :, start:samples] += normalized_segment
+
+        return normalized_wav2
+
+    @torch.jit.export
+    def loudness_normalization(self, wav: torch.Tensor) -> torch.Tensor:
+        """
+        Normalizes the loudness of the given audio signal to match the reference RMS.
+
+        Args:
+            wav (torch.Tensor): The input signal tensor of shape (batch, channels, timesteps).
+
+        Returns:
+            torch.Tensor: The loudness-normalized signal tensor of shape (batch, channels, timesteps).
+        """
+        wav = wav.clone()
+        # batch size, number of channels, number of samples
+        bsz, channel, samples = wav.shape
+
+        # Create a Hann window for smooth transitions
+        hann_window = torch.hann_window(
+            self.window_size, periodic=False).to(wav.device)
+        normalized_wav = torch.zeros_like(wav)
+
+        overlap = self.window_size // 2
+        num_windows = (samples - self.window_size + overlap) // overlap
+
+        # Unfold the signal into overlapping windows
+        # shape: (batch, channels, num_windows, window_size)
+        unfolded_wav = wav.unfold(-1, self.window_size, overlap)
+        rms_wav = torch.sqrt(torch.mean(unfolded_wav**2, dim=-1, keepdim=True))
+
+        # Calculate the gain needed to achieve the reference RMS
+        gain = self.reference_rms / (rms_wav + 1e-8)
+        gain = torch.clamp(gain, min=1, max=10.0)
+
+        hann_window_portion = hann_window.view(1, 1, -1)
+        normalized_segment = unfolded_wav * gain
+        normalized_segment *= hann_window_portion
+
+        # Reconstruct the signal from the normalized windows
+        normalized_segment = normalized_segment.swapaxes(-1, -2)
+        fold = torch.nn.Fold((1, normalized_wav.shape[-1]), kernel_size=(1, self.window_size), stride=(1, overlap))
+        for i_batch in range(bsz):
+            for i_channel in range(channel):
+                normalized_wav[i_batch, i_channel, :] = fold(normalized_segment[i_batch, i_channel, :, :].squeeze(0))
+
+
+        remaining_samples = samples - num_windows * overlap
+
+        if remaining_samples > 0:
+            start = num_windows * overlap
+            window_wav = wav[:, :, start:samples]
+            rms_wav = self.compute_rms(window_wav)
+            gain = self.reference_rms / (rms_wav + 1e-8)
+            gain = torch.clamp(gain, min=1, max=10.0)
+            hann_window_portion = hann_window[:remaining_samples]
+            normalized_segment = window_wav * gain
+            normalized_segment *= hann_window_portion.unsqueeze(0).unsqueeze(0)
+            normalized_wav[:, :, start:samples] += normalized_segment
+
+        return normalized_wav
 
 
 class AudioSealWM(torch.nn.Module):
@@ -67,22 +243,35 @@ class AudioSealWM(torch.nn.Module):
         encoder: torch.nn.Module,
         decoder: torch.nn.Module,
         msg_processor: Optional[torch.nn.Module] = None,
+        normalizer: Optional[NormalizationProcessor] = None,
     ):
         super().__init__()
         self.encoder = encoder
         self.decoder = decoder
         # The build should take care of validating the dimensions between component
         self.msg_processor = msg_processor
-        self._message: Optional[torch.Tensor] = None
+        self.message = torch.zeros(0)
+        self.normalizer = normalizer
 
-    @property
-    def message(self) -> Optional[torch.Tensor]:
-        return self._message
+    def __prepare_scriptable__(self):
+        for _, module in self.named_modules():
+            for hook in module._forward_pre_hooks.values():
+                if (
+                    hook.__module__ == "torch.nn.utils.weight_norm"
+                    and hook.__class__.__name__ == "WeightNorm"
+                ):
+                    torch.nn.utils.remove_weight_norm(module)
+        return self
 
-    @message.setter
-    def message(self, message: torch.Tensor) -> None:
-        self._message = message
+    @torch.jit.export
+    def random_message(self, bsz: int):
+        if self.msg_processor is not None:
+            nbits: int = self.msg_processor.nbits  # type: ignore
+        else:
+            nbits = 16
+        return torch.randint(0, 2, (bsz, nbits))  # type: ignore
 
+    @torch.jit.export
     def get_watermark(
         self,
         x: torch.Tensor,
@@ -99,51 +288,47 @@ class AudioSealWM(torch.nn.Module):
                 currently supported by the main AudioSeal model)
             message: An optional binary message, size: batch x k
         """
+
+        if sample_rate is not None:
+            if not torch.jit.is_scripting():
+                logger.warning(SAMPLE_RATE_WARN)
+
         length = x.size(-1)
-        if sample_rate is None:
-            logger.warning(COMPATIBLE_WARNING)
-            sample_rate = 16_000
-        assert sample_rate
-        if sample_rate != 16000:
-            x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
         hidden = self.encoder(x)
 
         if self.msg_processor is not None:
             if message is None:
-                if self.message is None:
-                    message = torch.randint(
-                        0, 2, (x.shape[0], self.msg_processor.nbits), device=x.device
-                    )
-                else:
-                    message = self.message.to(device=x.device)
-            else:
-                if message.ndim == 1:
-                    message = message.unsqueeze(0).repeat(x.shape[0], 1)
-                message = message.to(device=x.device)  # type: ignore
+                if self.message.numel() == 0:
+                    self.message = self.random_message(x.shape[0])
+                message = self.message.to(device=x.device)
+            
+            elif message.ndim == 1:
+                message = message.unsqueeze(0).repeat(x.shape[0], 1)
 
             hidden = self.msg_processor(hidden, message)
 
-        watermark = self.decoder(hidden)
+        # trim padding induced by seanet
+        watermark = self.decoder(hidden)[..., :length]
 
-        if sample_rate != 16000:
-            watermark = julius.resample_frac(
-                watermark, old_sr=16000, new_sr=sample_rate
-            )
+        # fit under envelope. This only works in eager mode
+        # as torch.jit.script does not support the Hand window transformation
+        if self.normalizer is not None and not torch.jit.is_scripting():
+            watermark = self.normalizer.fit_inside_envelope(x, watermark)
 
-        return watermark[..., :length]  # trim output cf encodec codebase
+        return watermark
 
+    @torch.jit.export
     def forward(
         self,
         x: torch.Tensor,
         sample_rate: Optional[int] = None,
         message: Optional[torch.Tensor] = None,
         alpha: float = 1.0,
-    ) -> torch.Tensor:
+    ) -> torch.Tensor:    
         """Apply the watermarking to the audio signal x with a tune-down ratio (default 1.0)"""
-        if sample_rate is None:
-            logger.warning(COMPATIBLE_WARNING)
-            sample_rate = 16_000
+
         wm = self.get_watermark(x, sample_rate=sample_rate, message=message)
+
         return x + alpha * wm
 
 
@@ -159,20 +344,36 @@ class AudioSealDetector(torch.nn.Module):
             returns 2 values.
     """
 
-    def __init__(self, *args, nbits: int = 0, **kwargs):
+    def __init__(
+        self,
+        encoder: SEANetEncoderKeepDimension,
+        normalizer: Optional[NormalizationProcessor] = None,
+        nbits: int = 0,
+    ):
         super().__init__()
-        encoder = SEANetEncoderKeepDimension(*args, **kwargs)
         last_layer = torch.nn.Conv1d(encoder.output_dim, 2 + nbits, 1)
         self.detector = torch.nn.Sequential(encoder, last_layer)
+        self.normalizer = normalizer
         self.nbits = nbits
 
+    def __prepare_scriptable__(self):
+        for _, module in self.named_modules():
+            for hook in module._forward_pre_hooks.values():
+                if (
+                    hook.__module__ == "torch.nn.utils.weight_norm"
+                    and hook.__class__.__name__ == "WeightNorm"
+                ):
+                    torch.nn.utils.remove_weight_norm(module)
+        return self
+
+    @torch.jit.export
     def detect_watermark(
         self,
         x: torch.Tensor,
         sample_rate: Optional[int] = None,
         message_threshold: float = 0.5,
         detection_threshold: float = 0.5,
-    ) -> Union[Tuple[float, torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         A convenience function that returns a probability of an audio being watermarked,
         together with its message in n-bits (binary) format. If the audio is not watermarked,
@@ -182,20 +383,21 @@ class AudioSealDetector(torch.nn.Module):
             sample_rate: The sample rate of the input audio
             message_threshold: threshold used to convert the watermark output (probability
                 of each bits being 0 or 1) into the binary n-bit message.
+            detection_threshold: threshold to convert the softmax output to binary indicating
+                the probability of the audio being watermarked
+        Returns:
+            detect_prob: A float indicating the probability of the audio being watermarked
+            message: A binary tensor of size batch x nbits, indicating the probability of each bit being 1
         """
-        if sample_rate is None:
-            logger.warning(COMPATIBLE_WARNING)
-            sample_rate = 16_000
         result, message = self.forward(x, sample_rate=sample_rate)  # b x 2+nbits
         detect_prob = (
-            torch.count_nonzero(torch.gt(result[:, 1, :], detection_threshold), dim=-1)
-            / result.shape[-1]
+            torch.count_nonzero(
+                torch.gt(result[:, 1, :], detection_threshold), dim=-1) / result.shape[-1]
         )
-        if x.shape[0] == 1:
-            detect_prob = detect_prob.detach().cpu().item()  # type: ignore
         message = torch.gt(message, message_threshold).int()
         return detect_prob, message
 
+    @torch.jit.export
     def decode_message(self, result: torch.Tensor) -> torch.Tensor:
         """
         Decode the message from the watermark result (batch x nbits x frames)
@@ -204,12 +406,10 @@ class AudioSealDetector(torch.nn.Module):
         Returns:
             The message of size batch x nbits, indicating probability of 1 for each bit
         """
-        assert (result.dim() > 2 and result.shape[1] == self.nbits) or (
-            self.dim() == 2 and result.shape[0] == self.nbits
-        ), f"Expect message of size [,{self.nbits}, frames] (get {result.size()})"
         decoded_message = result.mean(dim=-1)
         return torch.sigmoid(decoded_message)
 
+    @torch.jit.export
     def forward(
         self,
         x: torch.Tensor,
@@ -221,12 +421,13 @@ class AudioSealDetector(torch.nn.Module):
             x: Audio signal, size batch x frames
             sample_rate: The sample rate of the input audio
         """
-        if sample_rate is None:
-            logger.warning(COMPATIBLE_WARNING)
-            sample_rate = 16_000
-        assert sample_rate
-        if sample_rate != 16000:
-            x = julius.resample_frac(x, old_sr=sample_rate, new_sr=16000)
+        if self.normalizer is not None and not torch.jit.is_scripting():
+            x = self.normalizer.loudness_normalization(x)
+
+        if sample_rate is not None:
+            if not torch.jit.is_scripting():
+                logger.warning(SAMPLE_RATE_WARN)
+
         result = self.detector(x)  # b x 2+nbits
         # hardcode softmax on 2 first units used for detection
         result[:, :2, :] = torch.softmax(result[:, :2, :], dim=1)

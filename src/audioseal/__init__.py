@@ -13,7 +13,7 @@ detector.
 
 """
 
-__version__ = "0.1.8"
+__version__ = "0.1.3"
 
 
 from audioseal import builder
