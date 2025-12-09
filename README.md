@@ -146,7 +146,7 @@ streaming_watermarked_audio = torch.cat(streaming_watermarked_audio, dim=1)
 
 # You can detect a chunk of watermarked output, or the whole audio:
 
-detector = AudioSeal.load_generator("audioseal_detector_streaming")
+detector = AudioSeal.load_detector("audioseal_detector_streaming")
 detector.eval()
 
 wm_chunk = 100
