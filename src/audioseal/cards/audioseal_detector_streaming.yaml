@@ -2,7 +2,7 @@
 
 name: audioseal_detector_16bits
 model_type: seanet
-checkpoint: "https://dl.fbaipublicfiles.com/audioseal/d19add2c/detector.pth"
+checkpoint: "https://huggingface.co/facebook/audioseal/resolve/main/detector_streaming.pth"
 nbits: 16
 seanet:
   moshi: true
