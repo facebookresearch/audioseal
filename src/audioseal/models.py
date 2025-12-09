@@ -23,7 +23,7 @@ logger = logging.getLogger("Audioseal")
 
 @functools.lru_cache(10)
 def warn_once(msg: str) -> None:
-    """Give logs in limited number of times to avoid  flooding stderr."""
+    """Give logs in limited number of times to avoid flooding stderr."""
     logger.warning(msg)
 
 
