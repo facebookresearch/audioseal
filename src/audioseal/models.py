@@ -4,6 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+from contextlib import contextmanager
+import functools
 import logging
 import sys
 from typing import Optional, Tuple
@@ -19,14 +21,18 @@ else:
 logger = logging.getLogger("Audioseal")
 
 
+@functools.lru_cache(10)
+def warn_once(msg: str) -> None:
+    """Give logs in limited number of times to avoid  flooding stderr."""
+    logger.warning(msg)
+
+
 SAMPLE_RATE_WARN = (
-    "Starting from AudioSeal 1.0, audio is not resampled internally to"
+    "Deprecated Warning: `sample_rate` is specified but it will be ignored. \n"
+    "Consider removing `sample_rate` in the model call as this is a no-op\n"
+    "Starting from AudioSeal 0.2+, audio is not resampled internally to"
     " 16kHz or some predefined sample rates. The user is responsible for"
-    " providing the correct sample rate to the model. Each model has a"
-    " range of sample rates it supports, and this is specified in the"
-    " model card. If the sample rate is not specified, the model is "
-    " assumed to be trained on 16kHz audio.\n"
-    "If you specify a sample rate, this will be ignored."
+    " providing the correct sample rate to the model.\n"
 )
 
 
@@ -289,9 +295,9 @@ class AudioSealWM(torch.nn.Module):
             message: An optional binary message, size: batch x k
         """
 
-        if sample_rate is not None:
+        if sample_rate is not None and sample_rate != 16000:
             if not torch.jit.is_scripting():
-                logger.warning(SAMPLE_RATE_WARN)
+                warn_once(SAMPLE_RATE_WARN)
 
         length = x.size(-1)
         hidden = self.encoder(x)
@@ -301,7 +307,7 @@ class AudioSealWM(torch.nn.Module):
                 if self.message.numel() == 0:
                     self.message = self.random_message(x.shape[0])
                 message = self.message.to(device=x.device)
-            
+
             elif message.ndim == 1:
                 message = message.unsqueeze(0).repeat(x.shape[0], 1)
 
@@ -330,6 +336,20 @@ class AudioSealWM(torch.nn.Module):
         wm = self.get_watermark(x, sample_rate=sample_rate, message=message)
 
         return x + alpha * wm
+
+    @contextmanager
+    def streaming(self, batch_size: int):
+        """wrapper of the self.encoder.streaming() context manager for streaming mode"""
+
+        if not hasattr(self.encoder, "streaming"):
+            raise NotImplementedError(
+                "Streaming not supported: This checkpoint does not support streaming watermarking, "
+                "or you install a version of AudioSeal (<0.2) or Python (<3.10) without streaming support, "
+                "Please upgrade to the latest version of AudioSeal and Python 3.10+ to use this feature."
+            )
+        with self.encoder.streaming(batch_size=batch_size):  # type: ignore
+            yield
+
 
 
 class AudioSealDetector(torch.nn.Module):
@@ -424,9 +444,9 @@ class AudioSealDetector(torch.nn.Module):
         if self.normalizer is not None and not torch.jit.is_scripting():
             x = self.normalizer.loudness_normalization(x)
 
-        if sample_rate is not None:
+        if sample_rate is not None and sample_rate != 16000:
             if not torch.jit.is_scripting():
-                logger.warning(SAMPLE_RATE_WARN)
+                warn_once(SAMPLE_RATE_WARN)
 
         result = self.detector(x)  # b x 2+nbits
         # hardcode softmax on 2 first units used for detection

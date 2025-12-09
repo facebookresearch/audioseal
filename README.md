@@ -3,35 +3,50 @@
 <a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/-Python 3.8+-blue?style=for-the-badge&logo=python&logoColor=white"></a>
 <a href="https://black.readthedocs.io/en/stable/"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-black.svg?style=for-the-badge&labelColor=gray"></a>
 
-Inference code for AudioSeal, a method for speech localized watermarking, with state-of-the-art robustness and detector speed (training code coming soon).
-More details can be found in the [paper](https://arxiv.org/abs/2401.17264).
+This repo contains the Inference code for **AudioSeal**, a method for speech localized watermarking, with state-of-the-art robustness and detector speed (training code coming soon).
+
+To learn more, check out our [paper](https://arxiv.org/abs/2401.17264).
+
+# :rocket: Quick Links:
 
 [[`arXiv`](https://arxiv.org/abs/2401.17264)]
 [[🤗`Hugging Face`](https://huggingface.co/facebook/audioseal)]
-[[`Colab notebook`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
+[[`Colab Notebook`](https://colab.research.google.com/github/facebookresearch/audioseal/blob/master/examples/colab.ipynb)]
 [[`Webpage`](https://pierrefdz.github.io/publications/audioseal/)]
 [[`Blog`](https://about.fb.com/news/2024/06/releasing-new-ai-research-models-to-accelerate-innovation-at-scale/)]
 [[`Press`](https://www.technologyreview.com/2024/06/18/1094009/meta-has-created-a-way-to-watermark-ai-generated-speech/)]
 
 ![fig](https://github.com/facebookresearch/audioseal/assets/1453243/5d8cd96f-47b5-4c34-a3fa-7af386ed59f2)
 
-# Updates:
+# :sparkles: Key Updates:
 
-- 2024-06-17: Training code is now available. Check the [instruction](./docs/TRAINING.md) !!!
+- 2024-06-17: Training code is now available. Check the [instruction](./docs/TRAINING.md)!!!
 - 2024-05-31: Our paper gets accepted at ICML'24 :)
-- 2024-04-02: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too !
+- 2024-04-02: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too!
 - 2024-02-29: AudioSeal 0.1.2 is out, with more bug fixes for resampled audios and updated notebooks
 
-# Abtract
 
-We introduce AudioSeal, a method for speech localized watermarking, with state-of-the-art robustness and detector speed. It jointly trains a generator that embeds a watermark in the audio, and a detector that detects the watermarked fragments in longer audios, even in the presence of editing.
-Audioseal achieves state-of-the-art detection performance of both natural and synthetic speech at the sample level (1/16k second resolution), it generates limited alteration of signal quality and is robust to many types of audio editing. 
-Audioseal is designed with a fast, single-pass detector, that significantly surpasses existing models in speed — achieving detection up to two orders of magnitude faster, making it ideal for large-scale and real-time applications.
+# :book: Abstract
+
+**AudioSeal** introduces a breakthrough in **proactive, localized watermarking** for speech. It jointly trains two components: a **generator** that embeds an imperceptible watermark into audio and a **detector** that identifies watermark fragments in long or edited audio files.
+
+- **Key Features:**
+  - **Localized watermarking** at the sample level (1/16,000 of a second).
+  - Minimal impact on audio quality.
+  - **Robust** against various audio edits like compression, re-encoding, and noise addition.
+  - **Fast, single-pass detection** designed to surpass existing models significantly in speed — achieving detection up to **two orders of magnitude faster**, making it ideal for large-scale and real-time applications.
+
 
 # :mate: Installation
 
-AudioSeal requires Python >=3.8, Pytorch >= 1.13.0, [omegaconf](https://omegaconf.readthedocs.io/), and numpy. If you wish to use streaming or torchscripting, we need Python >= 3.10 and [einops](https://einops.rocks/). To install from PyPI:
+### Requirements:
+- Python >= 3.8 (>= 3.10 for streaming support)
+- Pytorch >= 1.13.0
+- [Omegaconf](https://omegaconf.readthedocs.io/)
+- [Numpy](https://pypi.org/project/numpy/)
+- [einops](https://github.com/arogozhnikov/einops) (for streaming support)
 
+### Install from PyPI:
 ```
 pip install audioseal
 ```
@@ -48,20 +63,16 @@ pip install -e .
 
 You can find all the model checkpoints on the [Hugging Face Hub](https://huggingface.co/facebook/audioseal). We provide the checkpoints for the following models:
 
-- [AudioSeal Generator](src/audioseal/cards/audioseal_wm_16bits.yaml).
-  It takes as input an audio signal (as a waveform), and outputs a watermark of the same size as the input, that can be added to the input to watermark it.
-  Optionally, it can also take as input a secret message of 16-bits that will be encoded in the watermark.
-- [AudioSeal Detector](src/audioseal/cards/audioseal_detector_16bits.yaml).
-  It takes as input an audio signal (as a waveform), and outputs a probability that the input contains a watermark at each sample of the audio (every 1/16k s).
-  Optionally, it may also output the secret message encoded in the watermark.
+- [AudioSeal Generator](src/audioseal/cards/audioseal_wm_16bits.yaml):
+  Takes an audio signal (as a waveform) and outputs a watermark of the same size as the input, which can be added to the input to watermark it. Optionally, it can also take a secret 16-bit message to embed in the watermark.
+- [AudioSeal Detector](src/audioseal/cards/audioseal_detector_16bits.yaml):
+  Takes an audio signal (as a waveform) and outputs the probability that the input contains a watermark at each sample (every 1/16k second). Optionally, it may also output the secret message encoded in the watermark.
 
 Note that the message is optional and has no influence on the detection output. It may be used to identify a model version for instance (up to $2**16=65536$ possible choices).
 
-**Note**: We are working to release the training code for anyone wants to build their own watermarker. Stay tuned !
-
 # :abacus: Usage
 
-Audioseal provides a simple API to watermark and detect the watermarks from an audio sample. Example usage:
+Here’s a quick example of how you can use AudioSeal’s API to embed and detect watermarks:
 
 ```python
 
@@ -75,10 +86,11 @@ model = AudioSeal.load_generator("audioseal_wm_16bits")
 
 # a torch tensor of shape (batch, channels, samples) and a sample rate
 # It is important to process the audio to the same sample rate as the model
-# expectes. In our case, we support 16khz audio 
-wav = [load audio wave form]
+# expects. The default AudioSeal should work well with 16kHz and 24kHz, and 
+# in the case of 48 khZ, it should work well for most speech audios
+wav = [load audio wav into a tensor of BatchxChannelxTime]
 
-watermark = model.get_watermark(wav, sr)
+watermark = model.get_watermark(wav)
 
 # Optional: you can add a 16-bit message to embed in the watermark
 # msg = torch.randint(0, 2, (wav.shape(0), model.msg_processor.nbits), device=wav.device)
