@@ -71,7 +71,7 @@ default:
     global: your_slurm_partitions
     team: your_slurm_partitions
   reference_dir: /tmp
-darwin:  # if we detect we are on a Mac, then most likely we are doing unit testing etc.
+darwin: # if we detect we are on a Mac, then most likely we are doing unit testing etc.
   dora_dir: [YOUR PATH]
   partitions:
     global: your_slurm_partitions
@@ -114,7 +114,7 @@ result, message = detector(watermarked_audio, sr)
 
 ## Training the HF AudioSeal model
 
-We also provide the hyperparameter and training config (in Dora term, a "grid") to reproduce our checkpoints for AudioSeal in HuggingFace (which is also the one used to produce the results ported in the ICML paper). To get this, check the AudioCraft's watermarking [grid](https://github.com/facebookresearch/audiocraft/blob/main/audiocraft/grids/watermarking/1315_kbits_seeds.py). To reproduce the result, run the `dora grid` command:
+We also provide the hyperparameter and training config (in Dora term, a "grid") to reproduce our checkpoints for AudioSeal in HuggingFace (which is also the one used to produce the results ported in the ICML paper). To get this, check the AudioCraft's watermarking [grid](https://github.com/facebookresearch/audiocraft/blob/main/audiocraft/grids/watermarking/kbits.py). To reproduce the result, run the `dora grid` command:
 
 ```bash
 AUDIOCRAFT_CONFIG=my_config.yaml AUDIOCRAFT_DSET=audio/voxpopuli dora grid watermarking.1315_kbits_seeds
