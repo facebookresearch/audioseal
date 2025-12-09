@@ -80,6 +80,7 @@ from audioseal import AudioSeal
 
 # model name corresponds to the YAML card file name found in audioseal/cards
 model = AudioSeal.load_generator("audioseal_wm_16bits")
+mdoel.eval()
 
 # Other way is to load directly from the checkpoint
 # model =  Watermarker.from_pretrained(checkpoint_path, device = wav.device)
@@ -118,6 +119,44 @@ print(result[:, 1 , :])
 # message will be a random tensor if the detector detects no watermarking from the audio
 print(message)  
 ```
+
+# :abacus: Streaming support
+
+Starting AudioSeal 0.2, you can run the watermarking over the stream of audio signals. The API is `model.streaming(batch_size),
+which will enable the convolutional cache during the watermark generation. Ensure to put this within context, so the cache is
+safely cleaned after the session:
+
+```python
+
+model = AudioSeal.load_generator("audioseal_wm_streaming")
+model.eval()
+
+audio = [audio chunks]
+streaming_watermarked_audio = []
+
+with model.streaming(batch_size=1):
+    
+    # Watermark each incoming chunk of the streaming audio
+    for chunk in audio:
+        watermarked_chunk = model(chunk, sample_rate=sr, message=secret_mesage, alpha=1)
+        streaming_watermarked_audio.append(watermarked_chunk)
+  
+streaming_watermarked_audio = torch.cat(streaming_watermarked_audio, dim=1)
+
+
+# You can detect a chunk of watermarked output, or the whole audio:
+
+detector = AudioSeal.load_generator("audioseal_detector_streaming")
+detector.eval()
+
+wm_chunk = 100
+partial_result, _ = detector.detect_watermark(streaming_watermarked_audio[:, :, :wm_chunk])
+
+
+full_result, _ = detector.detect_watermark(streaming_watermarked_audio)
+
+```
+
 
 # Train your own watermarking model
 
