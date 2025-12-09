@@ -339,7 +339,6 @@ class StreamingMultiheadAttention(StreamingModule[_MHAState]):
         self.rope = rope
         self.num_heads = num_heads
 
-        out_dim = embed_dim
         out_dim = 3 * embed_dim
         mult = 1
         self.weights_per_step = weights_per_step
