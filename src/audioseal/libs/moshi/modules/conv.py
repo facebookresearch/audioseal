@@ -246,7 +246,7 @@ class StreamingConv1d(StreamingModule[_StreamingConv1dState]):
         return _StreamingConv1dState(0, 0)
 
     def forward(self, x):
-        B, C, T = x.shape
+        B, C = x.shape[:2]
         padding_total = self._padding_total
         extra_padding = get_extra_padding_for_conv1d(
             x, self._effective_kernel_size, self._stride, padding_total
