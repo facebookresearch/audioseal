@@ -6,7 +6,7 @@
 
 import sys
 from dataclasses import asdict, dataclass, field, is_dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from omegaconf import DictConfig, OmegaConf
 from torch import device, dtype
