@@ -165,7 +165,7 @@ See [here](./docs/TRAINING.md) for details on how to train your own Watermarking
 # Want to contribute?
 
  We welcome Pull Requests with improvements or suggestions.
- If you want to flag an issue or propose an improvement, but dont' know how to realize it, create a GitHub Issue.
+ If you want to flag an issue or propose an improvement, but don't know how to realize it, create a GitHub Issue.
 
 # Troubleshooting
 
