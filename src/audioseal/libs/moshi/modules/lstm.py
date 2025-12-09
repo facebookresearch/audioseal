@@ -48,7 +48,7 @@ class RawStreamingLSTM(StreamingModule[_StreamingLSTMState]):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.permute(2, 0, 1)
         if not self._streaming_state.is_streamable():
-            y, (h, c) = self.lstm(x)
+            y, (h, _) = self.lstm(x)
         else:
             previous_h = self._streaming_state.previous_h
             previous_c = self._streaming_state.previous_c
