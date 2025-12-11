@@ -137,7 +137,7 @@ class StreamingModule(nn.Module, tp.Generic[State]):
                     child.reset_streaming()
 
     @torch.jit.export
-    def _add_streaming_state(self, prefix: str, state: dict[str, tp.Any]) -> None:
+    def _add_streaming_state(self, prefix: str, state: tp.Dict[str, tp.Any]) -> None:
         """Add the streaming state to the given state dict."""
         state[prefix] = self._streaming_state
         if self._streaming_propagate:
@@ -147,13 +147,13 @@ class StreamingModule(nn.Module, tp.Generic[State]):
                     module._add_streaming_state(name, state)  # type: ignore
 
     @torch.jit.export
-    def get_streaming_state(self) -> dict[str, tp.Any]:
+    def get_streaming_state(self) -> tp.Dict[str, tp.Any]:
         """Return the complete streaming state, including that of sub-modules."""
-        state: dict[str, tp.Any] = {}
+        state: tp.Dict[str, tp.Any] = {}
         self._add_streaming_state("", state)
         return state
 
-    def _pop_streaming_state(self, prefix: str, state: dict[str, tp.Any]) -> None:
+    def _pop_streaming_state(self, prefix: str, state: tp.Dict[str, tp.Any]) -> None:
         """Set the streaming state, including that of sub-modules."""
         if prefix in state:
             self._streaming_state = state[prefix]
@@ -166,7 +166,7 @@ class StreamingModule(nn.Module, tp.Generic[State]):
                     name = prefix + "." + name
                     module._pop_streaming_state(name, state)  # type: ignore
 
-    def set_streaming_state(self, state: dict[str, tp.Any]):
+    def set_streaming_state(self, state: tp.Dict[str, tp.Any]):
         """Set the streaming state, including that of sub-modules."""
         state = dict(state)
 
