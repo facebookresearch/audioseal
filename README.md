@@ -3,8 +3,7 @@
 <a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/-Python 3.8+-blue?style=for-the-badge&logo=python&logoColor=white"></a>
 <a href="https://black.readthedocs.io/en/stable/"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-black.svg?style=for-the-badge&labelColor=gray"></a>
 
-This repo contains the Inference code for **AudioSeal**, a method for speech localized watermarking, with state-of-the-art robustness and detector speed (training code coming soon).
-
+This repo contains the official implementation  for **AudioSeal**, a method for speech localized watermarking, with state-of-the-art robustness and detector speed.
 To learn more, check out our [paper](https://arxiv.org/abs/2401.17264).
 
 # :rocket: Quick Links:
@@ -20,6 +19,7 @@ To learn more, check out our [paper](https://arxiv.org/abs/2401.17264).
 
 # :sparkles: Key Updates:
 
+- 2024-12-12: AudioSeal 0.2 is out, with streaming support and other improvement
 - 2024-06-17: Training code is now available. Check the [instruction](./docs/TRAINING.md)!!!
 - 2024-05-31: Our paper gets accepted at ICML'24 :)
 - 2024-04-02: We have updated our license to full MIT license (including the license for the model weights) ! Now you can use AudioSeal in commercial application too!
