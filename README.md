@@ -1,10 +1,9 @@
-# :loud_sound: AudioSeal: Proactive Localized Watermarking
+# :loud_sound: AudioSeal: Efficient Localized Audio Watermarking
 
 <a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/-Python 3.8+-blue?style=for-the-badge&logo=python&logoColor=white"></a>
 <a href="https://black.readthedocs.io/en/stable/"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-black.svg?style=for-the-badge&labelColor=gray"></a>
 
-This repo contains the official implementation  for **AudioSeal**, a method for speech localized watermarking, with state-of-the-art robustness and detector speed.
-To learn more, check out our [paper](https://arxiv.org/abs/2401.17264).
+This repo contains the official implementation  for **AudioSeal**, a method for efficient audio watermarking, with state-of-the-art robustness and detector speed.
 
 # :rocket: Quick Links:
 
@@ -28,10 +27,10 @@ To learn more, check out our [paper](https://arxiv.org/abs/2401.17264).
 
 # :book: Abstract
 
-**AudioSeal** introduces a breakthrough in **proactive, localized watermarking** for speech. It jointly trains two components: a **generator** that embeds an imperceptible watermark into audio and a **detector** that identifies watermark fragments in long or edited audio files.
+**AudioSeal** introduces a novel audio watermarking using **ocalized watermarking** and a novel perceptual loss. It jointly trains two components: a **generator** that embeds an imperceptible watermark into audio and a **detector** that identifies watermark fragments in long or edited audio files.
 
 - **Key Features:**
-  - **Localized watermarking** at the sample level (1/16,000 of a second).
+  - **Localized watermarking** at the sample level (1/16,000 of a second). AudioSeal works well with other sampling rates as well (24 khZ, 44.5 kHz, 48 kHz)
   - Minimal impact on audio quality.
   - **Robust** against various audio edits like compression, re-encoding, and noise addition.
   - **Fast, single-pass detection** designed to surpass existing models significantly in speed — achieving detection up to **two orders of magnitude faster**, making it ideal for large-scale and real-time applications.
