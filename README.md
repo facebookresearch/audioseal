@@ -159,11 +159,21 @@ full_result, _ = detector.detect_watermark(streaming_watermarked_audio)
 See [example notebook](examples/Getting_started.ipynb) for full details.
 
 
-#  Train your own watermarking model
+# :brain: Train your own watermarking model
 
 See [here](./docs/TRAINING.md) for details on how to train your own Watermarking model.
 
-# Troubleshooting
+
+# See Also
+
+The team also develops other open-source watermarking solutions:
+- [WMAR](https://github.com/facebookresearch/wmar): Autoregressive watermarking models for images
+- [Video Seal](https://github.com/facebookresearch/videoseal): Open and efficient video watermarking
+- [WAM](https://github.com/facebookresearch/watermark-anything): Watermark Any Images with Localization
+
+
+
+# 🎮 Troubleshooting
 
 - If you encounter the error `ValueError: not enough values to unpack (expected 3, got 2)`, this is because we expect a batch of audio  tensors as inputs. Add one
 dummy batch dimension to your input (e.g. `wav.unsqueeze(0)`, see [example notebook for getting started](examples/Getting_started.ipynb)).
@@ -175,11 +185,18 @@ and re-run again.
 - If you use torchaudio to handle your audios and encounter the error `Couldn't find appropriate backend to handle uri ...`, this is due to newer version of
 torchaudio does not handle the default backend well. Either downgrade your torchaudio to `2.1.0` or earlier, or install `soundfile` as your audio backend.
 
-# :thanks: Acknowledgements
+# :heart: Acknowledgements
 
 We borrow the code with some adaptations from the following repos:
 - [AudioCraft](https://github.com/facebookresearch/audiocraft/) in `libs/audiocraft/`.
 - [Moshi](https://github.com/kyutai-labs/moshi/) in `libs/moshi/`.
+
+## Maintainers:
+- [Tuan Tran](https://github.com/antoine-tran)
+- [Hady Elsahar](https://github.com/hadyelsahar)
+- [Pierre Fernandez](https://github.com/pierrefdz)
+- [Robin San Roman](https://github.com/robinsrm)
+
 
 
 # :handshake: Contributions
@@ -187,17 +204,13 @@ We borrow the code with some adaptations from the following repos:
  We welcome Pull Requests with improvements or suggestions.
  If you want to flag an issue or propose an improvement, but don't know how to realize it, create a GitHub Issue.
 
+
 # 🧾 License
 
 - The code in this repository is released under the MIT license as found in the [LICENSE file](LICENSE).
 
-# Maintainers:
-- [Tuan Tran](https://github.com/antoine-tran)
-- [Hady Elsahar](https://github.com/hadyelsahar)
-- [Pierre Fernandez](https://github.com/pierrefdz)
-- [Robin San Roman](https://github.com/robinsrm)
 
-# Citation
+# ✍️ Citation
 
 If you find this repository useful, please consider giving a star :star: and please cite as:
 
