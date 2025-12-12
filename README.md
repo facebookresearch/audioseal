@@ -156,16 +156,12 @@ partial_result, _ = detector.detect_watermark(streaming_watermarked_audio[:, :, 
 full_result, _ = detector.detect_watermark(streaming_watermarked_audio)
 
 ```
+See [example notebook](examples/Getting_started.ipynb) for full details.
 
 
-# Train your own watermarking model
+#  Train your own watermarking model
 
 See [here](./docs/TRAINING.md) for details on how to train your own Watermarking model.
-
-# Want to contribute?
-
- We welcome Pull Requests with improvements or suggestions.
- If you want to flag an issue or propose an improvement, but don't know how to realize it, create a GitHub Issue.
 
 # Troubleshooting
 
@@ -179,7 +175,19 @@ and re-run again.
 - If you use torchaudio to handle your audios and encounter the error `Couldn't find appropriate backend to handle uri ...`, this is due to newer version of
 torchaudio does not handle the default backend well. Either downgrade your torchaudio to `2.1.0` or earlier, or install `soundfile` as your audio backend.
 
-# License
+# :thanks: Acknowledgements
+
+We borrow the code with some adaptations from the following repos:
+- [AudioCraft](https://github.com/facebookresearch/audiocraft/) in `libs/audiocraft/`.
+- [Moshi](https://github.com/kyutai-labs/moshi/) in `libs/moshi/`.
+
+
+# :handshake: Contributions
+
+ We welcome Pull Requests with improvements or suggestions.
+ If you want to flag an issue or propose an improvement, but don't know how to realize it, create a GitHub Issue.
+
+# 🧾 License
 
 - The code in this repository is released under the MIT license as found in the [LICENSE file](LICENSE).
 
