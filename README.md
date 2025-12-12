@@ -80,7 +80,7 @@ from audioseal import AudioSeal
 
 # model name corresponds to the YAML card file name found in audioseal/cards
 model = AudioSeal.load_generator("audioseal_wm_16bits")
-mdoel.eval()
+model.eval()
 
 # Other way is to load directly from the checkpoint
 # model =  Watermarker.from_pretrained(checkpoint_path, device = wav.device)
