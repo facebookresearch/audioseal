@@ -190,13 +190,6 @@ We borrow the code with some adaptations from the following repos:
 - [AudioCraft](https://github.com/facebookresearch/audiocraft/) in `libs/audiocraft/`.
 - [Moshi](https://github.com/kyutai-labs/moshi/) in `libs/moshi/`.
 
-## Maintainers:
-- [Tuan Tran](https://github.com/antoine-tran)
-- [Hady Elsahar](https://github.com/hadyelsahar)
-- [Pierre Fernandez](https://github.com/pierrefdz)
-- [Robin San Roman](https://github.com/robinsrm)
-
-
 
 # :handshake: Contributions
 
