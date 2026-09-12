@@ -21,6 +21,7 @@ from torch.nn.utils import weight_norm
 from audioseal.libs.moshi.modules.streaming import (
     RawStreamingConv1d,
     RawStreamingConvTranspose1d,
+    StreamingContainer,
     StreamingModule,
 )
 
@@ -111,7 +112,7 @@ def unpad1d(x: torch.Tensor, paddings: tp.Tuple[int, int]):
     return x[..., padding_left:end]
 
 
-class NormConv1d(nn.Module):
+class NormConv1d(StreamingContainer):
     """Wrapper around Conv1d and normalization applied to this conv
     to provide a uniform interface across normalization approaches.
     """
@@ -135,7 +136,7 @@ class NormConv1d(nn.Module):
         return x
 
 
-class NormConvTranspose1d(nn.Module):
+class NormConvTranspose1d(StreamingContainer):
     """Wrapper around ConvTranspose1d and normalization applied to this conv
     to provide a uniform interface across normalization approaches.
     """
