@@ -8,7 +8,7 @@ import functools
 import logging
 import sys
 from contextlib import contextmanager
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import torch
 
@@ -259,6 +259,14 @@ class AudioSealWM(torch.nn.Module):
         self.message = torch.zeros(0)
         self.normalizer = normalizer
 
+        self._streaming = False
+        self._frame_size = int(getattr(encoder, "hop_length", 0))
+
+    @property
+    def frame_size(self) -> int:
+        """Number of input samples per encoder frame."""
+        return self._frame_size
+
     def __prepare_scriptable__(self):
         for _, module in self.named_modules():
             for hook in module._forward_pre_hooks.values():
@@ -300,6 +308,12 @@ class AudioSealWM(torch.nn.Module):
                 warn_once(SAMPLE_RATE_WARN)
 
         length = x.size(-1)
+        if hasattr(self.encoder, "is_streaming") and self.encoder.is_streaming():  # type: ignore[operator]
+            if length == 0 or length % self.frame_size != 0:
+                raise ValueError(
+                    f"Streaming input length must be a positive multiple of {self.frame_size}; "
+                    "buffer incomplete frames before calling the generator."
+                )
         hidden = self.encoder(x)
 
         if self.msg_processor is not None:
@@ -339,17 +353,53 @@ class AudioSealWM(torch.nn.Module):
 
     @contextmanager
     def streaming(self, batch_size: int):
-        """wrapper of the self.encoder.streaming() context manager for streaming mode"""
+        """Retain encoder and decoder history until the streaming session ends.
 
-        if not hasattr(self.encoder, "streaming"):
+        Keep the batch size and message fixed. Each input must contain a positive
+        multiple of frame_size samples. Buffer incomplete frames and only pad
+        the final remainder, trimming the output to its original length.
+        """
+
+        if (
+            not hasattr(self.encoder, "streaming")
+            or not hasattr(self.decoder, "streaming")
+            or self.frame_size <= 0
+        ):
             raise NotImplementedError(
                 "Streaming not supported: This checkpoint does not support streaming watermarking, "
                 "or you install a version of AudioSeal (<0.2) or Python (<3.10) without streaming support, "
                 "Please upgrade to the latest version of AudioSeal and Python 3.10+ to use this feature."
             )
-        with self.encoder.streaming(batch_size=batch_size):  # type: ignore
-            yield
+        if self._streaming:
+            raise RuntimeError("The generator is already streaming.")
+        with self.encoder.streaming(batch_size=batch_size), self.decoder.streaming(batch_size=batch_size):  # type: ignore
+            self._streaming = True
+            try:
+                yield
+            finally:
+                self._streaming = False
 
+    def get_streaming_state(self) -> Dict[str, Any]:
+        """Return both networks' state for restoration in a streaming context.
+
+        The returned state is mutable and belongs to the current stream;
+        it is not an immutable snapshot.
+        """
+        if not self._streaming:
+            raise RuntimeError("The generator is not streaming.")
+        return {
+            "encoder": self.encoder.get_streaming_state(),  # type: ignore[operator]
+            "decoder": self.decoder.get_streaming_state(),  # type: ignore[operator]
+        }
+
+    def set_streaming_state(self, state: Dict[str, Any]) -> None:
+        """Restore both networks' state inside a streaming context."""
+        if not self._streaming:
+            raise RuntimeError("The generator is not streaming.")
+        if set(state) != {"encoder", "decoder"}:
+            raise ValueError("Streaming state must contain both encoder and decoder.")
+        self.encoder.set_streaming_state(state["encoder"])  # type: ignore[operator]
+        self.decoder.set_streaming_state(state["decoder"])  # type: ignore[operator]
 
 
 class AudioSealDetector(torch.nn.Module):

@@ -116,8 +116,8 @@ class StreamingModule(nn.Module, tp.Generic[State]):
     def streaming(self, batch_size: int):
         """Context manager to enter streaming mode. Reset streaming state on exit."""
 
-        self._start_streaming(batch_size)
         try:
+            self._start_streaming(batch_size)
             yield
         finally:
             self._stop_streaming()
@@ -183,6 +183,10 @@ class StreamingContainer(StreamingModule[_NullState]):
     @torch.jit.export
     def _empty_state(self) -> _NullState:
         return _NullState()
+
+
+class StreamingSequential(nn.Sequential, StreamingContainer):
+    """Sequential container that propagates streaming state to its children."""
 
 
 @torch.jit.script
