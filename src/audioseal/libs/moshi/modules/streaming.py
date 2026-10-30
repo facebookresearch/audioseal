@@ -186,7 +186,11 @@ class StreamingContainer(StreamingModule[_NullState]):
 
 
 class StreamingSequential(nn.Sequential, StreamingContainer):
-    """Sequential container that propagates streaming state to its children."""
+    """Sequential container that propagates streaming state to its children.
+
+    Subclasses should keep the inherited nn.Sequential.forward() implementation.
+    Use StreamingContainer when custom forward logic is needed.
+    """
 
 
 @torch.jit.script

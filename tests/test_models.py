@@ -301,7 +301,7 @@ def test_streaming_pretrained(example_audio):
     assert torch.count_nonzero(torch.eq(decoded, message)).item() > 20
 
 
-def test_streaming_state_requires_both_networks(streaming_generator):
+def test_streaming_state_validation(streaming_generator):
     model = streaming_generator
     with pytest.raises(RuntimeError, match="not streaming"):
         model.get_streaming_state()
@@ -310,6 +310,11 @@ def test_streaming_state_requires_both_networks(streaming_generator):
     with model.streaming(1):
         with pytest.raises(ValueError, match="both encoder and decoder"):
             model.set_streaming_state({"encoder": model.encoder.get_streaming_state()})
+
+
+def test_streaming_rejects_nested_contexts(streaming_generator):
+    model = streaming_generator
+    with model.streaming(1):
         with pytest.raises(RuntimeError, match="already streaming"):
             with model.streaming(1):
                 pass
