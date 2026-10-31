@@ -324,6 +324,8 @@ def test_non_streaming_custom_modules():
     model = AudioSealWM(torch.nn.Identity(), torch.nn.Identity())
     audio = torch.randn(1, 1, 321)
     torch.testing.assert_close(model(audio), 2 * audio)
+    scripted = torch.jit.script(model)
+    torch.testing.assert_close(scripted(audio), 2 * audio)
     with pytest.raises(NotImplementedError, match="Streaming not supported"):
         with model.streaming(1):
             pass

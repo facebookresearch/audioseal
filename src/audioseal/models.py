@@ -316,12 +316,13 @@ class AudioSealWM(torch.nn.Module):
                 warn_once(SAMPLE_RATE_WARN)
 
         length = x.size(-1)
-        if hasattr(self.encoder, "is_streaming") and self.encoder.is_streaming():  # type: ignore[operator]
-            if length == 0 or length % self.frame_size != 0:
-                raise ValueError(
-                    f"Streaming input length must be a positive multiple of {self.frame_size}; got {length}. "
-                    "Buffer incomplete frames before calling the generator."
-                )
+        if hasattr(self.encoder, "is_streaming"):
+            if self.encoder.is_streaming():  # type: ignore[operator]
+                if length == 0 or length % self.frame_size != 0:
+                    raise ValueError(
+                        f"Streaming input length must be a positive multiple of {self.frame_size}; got {length}. "
+                        "Buffer incomplete frames before calling the generator."
+                    )
         hidden = self.encoder(x)
 
         if self.msg_processor is not None:
