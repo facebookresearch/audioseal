@@ -8,7 +8,7 @@ import functools
 import logging
 import sys
 from contextlib import contextmanager
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import torch
 
@@ -142,10 +142,8 @@ class NormalizationProcessor:
         unfolded_wav2 = wav2.unfold(-1, self.window_size, overlap)
 
         # Compute RMS for each window
-        rms_wav1 = torch.sqrt(torch.mean(
-            unfolded_wav1**2, dim=-1, keepdim=True))
-        rms_wav2 = torch.sqrt(torch.mean(
-            unfolded_wav2**2, dim=-1, keepdim=True))
+        rms_wav1 = torch.sqrt(torch.mean(unfolded_wav1**2, dim=-1, keepdim=True))
+        rms_wav2 = torch.sqrt(torch.mean(unfolded_wav2**2, dim=-1, keepdim=True))
 
         # Calculate the gain needed to fit wav2 inside wav1's envelope
         gain = rms_wav1 / (rms_wav2 + 1e-8)
@@ -157,10 +155,16 @@ class NormalizationProcessor:
 
         # Reconstruct the signal from the normalized windows
         normalized_segment = normalized_segment.swapaxes(-1, -2)
-        fold = torch.nn.Fold((1, normalized_wav2.shape[-1]), kernel_size=(1, self.window_size), stride=(1, overlap))
+        fold = torch.nn.Fold(
+            (1, normalized_wav2.shape[-1]),
+            kernel_size=(1, self.window_size),
+            stride=(1, overlap),
+        )
         for i_batch in range(bsz):
             for i_channel in range(channel):
-                normalized_wav2[i_batch, i_channel, :] = fold(normalized_segment[i_batch, i_channel, :, :].squeeze(0))
+                normalized_wav2[i_batch, i_channel, :] = fold(
+                    normalized_segment[i_batch, i_channel, :, :].squeeze(0)
+                )
 
         # Handle the last segment
         remaining_samples = samples - num_windows * overlap
@@ -195,8 +199,7 @@ class NormalizationProcessor:
         bsz, channel, samples = wav.shape
 
         # Create a Hann window for smooth transitions
-        hann_window = torch.hann_window(
-            self.window_size, periodic=False).to(wav.device)
+        hann_window = torch.hann_window(self.window_size, periodic=False).to(wav.device)
         normalized_wav = torch.zeros_like(wav)
 
         overlap = self.window_size // 2
@@ -217,11 +220,16 @@ class NormalizationProcessor:
 
         # Reconstruct the signal from the normalized windows
         normalized_segment = normalized_segment.swapaxes(-1, -2)
-        fold = torch.nn.Fold((1, normalized_wav.shape[-1]), kernel_size=(1, self.window_size), stride=(1, overlap))
+        fold = torch.nn.Fold(
+            (1, normalized_wav.shape[-1]),
+            kernel_size=(1, self.window_size),
+            stride=(1, overlap),
+        )
         for i_batch in range(bsz):
             for i_channel in range(channel):
-                normalized_wav[i_batch, i_channel, :] = fold(normalized_segment[i_batch, i_channel, :, :].squeeze(0))
-
+                normalized_wav[i_batch, i_channel, :] = fold(
+                    normalized_segment[i_batch, i_channel, :, :].squeeze(0)
+                )
 
         remaining_samples = samples - num_windows * overlap
 
@@ -258,6 +266,14 @@ class AudioSealWM(torch.nn.Module):
         self.msg_processor = msg_processor
         self.message = torch.zeros(0)
         self.normalizer = normalizer
+
+        self._streaming = False
+        self._frame_size = int(getattr(encoder, "hop_length", 0))
+
+    @property
+    def frame_size(self) -> int:
+        """Number of input samples per encoder frame."""
+        return self._frame_size
 
     def __prepare_scriptable__(self):
         for _, module in self.named_modules():
@@ -300,6 +316,13 @@ class AudioSealWM(torch.nn.Module):
                 warn_once(SAMPLE_RATE_WARN)
 
         length = x.size(-1)
+        if hasattr(self.encoder, "is_streaming"):
+            if self.encoder.is_streaming():  # type: ignore[operator]
+                if length == 0 or length % self.frame_size != 0:
+                    raise ValueError(
+                        f"Streaming input length must be a positive multiple of {self.frame_size}; got {length}. "
+                        "Buffer incomplete frames before calling the generator."
+                    )
         hidden = self.encoder(x)
 
         if self.msg_processor is not None:
@@ -330,7 +353,7 @@ class AudioSealWM(torch.nn.Module):
         sample_rate: Optional[int] = None,
         message: Optional[torch.Tensor] = None,
         alpha: float = 1.0,
-    ) -> torch.Tensor:    
+    ) -> torch.Tensor:
         """Apply the watermarking to the audio signal x with a tune-down ratio (default 1.0)"""
 
         wm = self.get_watermark(x, sample_rate=sample_rate, message=message)
@@ -339,17 +362,55 @@ class AudioSealWM(torch.nn.Module):
 
     @contextmanager
     def streaming(self, batch_size: int):
-        """wrapper of the self.encoder.streaming() context manager for streaming mode"""
+        """Retain encoder and decoder history until the streaming session ends.
 
-        if not hasattr(self.encoder, "streaming"):
+        Keep the batch size and message fixed. Each input must contain a positive
+        multiple of frame_size samples. Buffer incomplete frames and only pad
+        the final remainder, trimming the output to its original length.
+        """
+
+        if not hasattr(self.encoder, "streaming") or not hasattr(
+            self.decoder, "streaming"
+        ):
             raise NotImplementedError(
                 "Streaming not supported: This checkpoint does not support streaming watermarking, "
                 "or you install a version of AudioSeal (<0.2) or Python (<3.10) without streaming support, "
                 "Please upgrade to the latest version of AudioSeal and Python 3.10+ to use this feature."
             )
-        with self.encoder.streaming(batch_size=batch_size):  # type: ignore
-            yield
+        if self.frame_size <= 0:
+            raise NotImplementedError(
+                "Streaming not supported: This encoder does not expose a positive frame size."
+            )
+        if self._streaming:
+            raise RuntimeError("The generator is already streaming.")
+        with self.encoder.streaming(batch_size=batch_size), self.decoder.streaming(batch_size=batch_size):  # type: ignore
+            self._streaming = True
+            try:
+                yield
+            finally:
+                self._streaming = False
 
+    def get_streaming_state(self) -> Dict[str, Any]:
+        """Return both networks' state for restoration in a streaming context.
+
+        The returned state is mutable and belongs to the current stream;
+        it is not an immutable snapshot.
+        """
+        if not self._streaming:
+            raise RuntimeError("The generator is not streaming.")
+        return {
+            "encoder": self.encoder.get_streaming_state(),  # type: ignore[operator]
+            "decoder": self.decoder.get_streaming_state(),  # type: ignore[operator]
+        }
+
+    def set_streaming_state(self, state: Dict[str, Any]) -> None:
+        """Restore both networks' state inside a streaming context."""
+        if not self._streaming:
+            raise RuntimeError("The generator is not streaming.")
+        if set(state) != {"encoder", "decoder"}:
+            raise ValueError("Streaming state must contain both encoder and decoder.")
+        self.encoder.set_streaming_state(state["encoder"])  # type: ignore[operator]
+        self.decoder.set_streaming_state(state["decoder"])  # type: ignore[operator]
 
 
 class AudioSealDetector(torch.nn.Module):
@@ -411,8 +472,8 @@ class AudioSealDetector(torch.nn.Module):
         """
         result, message = self.forward(x, sample_rate=sample_rate)  # b x 2+nbits
         detect_prob = (
-            torch.count_nonzero(
-                torch.gt(result[:, 1, :], detection_threshold), dim=-1) / result.shape[-1]
+            torch.count_nonzero(torch.gt(result[:, 1, :], detection_threshold), dim=-1)
+            / result.shape[-1]
         )
         message = torch.gt(message, message_threshold).int()
         return detect_prob, message

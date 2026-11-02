@@ -15,7 +15,11 @@ import torch.nn as nn
 
 from audioseal.libs.moshi.modules.conv import StreamingConv1d, StreamingConvTranspose1d
 from audioseal.libs.moshi.modules.lstm import RawStreamingLSTM
-from audioseal.libs.moshi.modules.streaming import StreamingAdd, StreamingContainer
+from audioseal.libs.moshi.modules.streaming import (
+    StreamingAdd,
+    StreamingContainer,
+    StreamingSequential,
+)
 from audioseal.libs.moshi.utils.compile import torch_compile_lazy
 
 
@@ -74,7 +78,7 @@ class SEANetResnetBlock(StreamingContainer):
                     pad_mode=pad_mode,
                 ),
             ]
-        self.block = nn.Sequential(*block)
+        self.block = StreamingSequential(*block)
         self.add = StreamingAdd()
         self.shortcut: nn.Module
         if true_skip:
@@ -241,7 +245,7 @@ class SEANetEncoder(StreamingContainer):
             ),
         ]
 
-        self.model = nn.Sequential(*model)
+        self.model = StreamingSequential(*model)
 
     @torch_compile_lazy
     def forward(self, x):
@@ -477,7 +481,7 @@ class SEANetDecoder(StreamingContainer):
             final_act = getattr(nn, final_activation)
             final_activation_params = final_activation_params or {}
             model += [final_act(**final_activation_params)]
-        self.model = nn.Sequential(*model)
+        self.model = StreamingSequential(*model)
 
     @torch_compile_lazy
     def forward(self, z):
