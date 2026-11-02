@@ -5,6 +5,11 @@ All notable changes to AudioSeal are documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 
+## [Unreleased]
+
+- Fix streaming history propagation through the watermark generator's encoder and decoder.
+- Add complete generator state save/restore methods and expose `frame_size`. Reject empty or incomplete streaming frames, with documented buffering and final padding requirements.
+
 ## [0.2.0] - 2025-12-09
 
 - Add new models with streaming support (`audioseal_wm_streaming`, `audioseal_detector_streaming`)

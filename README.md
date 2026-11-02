@@ -121,26 +121,35 @@ print(message)
 
 # :abacus: Streaming support
 
-Starting AudioSeal 0.2, you can run the watermarking over the stream of audio signals. The API is `model.streaming(batch_size),
-which will enable the convolutional cache during the watermark generation. Ensure to put this within context, so the cache is
-safely cleaned after the session:
+Starting AudioSeal 0.2, you can watermark a stream of audio signals with `model.streaming(batch_size)`. The context retains convolution and LSTM history in both the encoder and decoder and clears it when the session ends. Use a causal streaming checkpoint and keep the batch size and message fixed throughout the session.
+
+Each input chunk must contain a positive multiple of `model.frame_size` samples, which is 320 samples for `audioseal_wm_streaming`. Buffer incomplete frames until more audio arrives. At the end of the stream, pad the final remainder with zeros to one frame, watermark it within the same context, and trim the result to the remainder's original length. Do not pad intermediate chunks, since those samples would become part of the retained history.
+
+For whole-clip equivalence checks, apply the same final waveform padding before the whole-clip call and trim its output too. Passing a partial frame directly to a non-streaming model uses per-layer padding instead and can produce different values at the end.
 
 ```python
+
+import torch
 
 model = AudioSeal.load_generator("audioseal_wm_streaming")
 model.eval()
 
-audio = [audio chunks]
+# wav is a nonempty tensor of shape (batch, 1, samples), sampled at 16 kHz.
+audio = wav.split(5 * model.frame_size, dim=-1)
+secret_message = torch.zeros(wav.shape[0], 16, dtype=torch.int32, device=wav.device)
 streaming_watermarked_audio = []
 
-with model.streaming(batch_size=1):
+with torch.no_grad(), model.streaming(batch_size=wav.shape[0]):
     
     # Watermark each incoming chunk of the streaming audio
     for chunk in audio:
-        watermarked_chunk = model(chunk, sample_rate=sr, message=secret_mesage, alpha=1)
-        streaming_watermarked_audio.append(watermarked_chunk)
+        length = chunk.shape[-1]
+        # Only the final chunk from split() can contain an incomplete frame.
+        chunk = torch.nn.functional.pad(chunk, (0, (-length) % model.frame_size))
+        watermarked_chunk = model(chunk, message=secret_message, alpha=1)
+        streaming_watermarked_audio.append(watermarked_chunk[..., :length])
   
-streaming_watermarked_audio = torch.cat(streaming_watermarked_audio, dim=1)
+streaming_watermarked_audio = torch.cat(streaming_watermarked_audio, dim=-1)
 
 
 # You can detect a chunk of watermarked output, or the whole audio:
@@ -156,6 +165,20 @@ full_result, _ = detector.detect_watermark(streaming_watermarked_audio)
 
 ```
 See [example notebook](examples/Getting_started.ipynb) for full details.
+
+To switch between streams on one generator, save and restore the complete generator state inside a streaming context:
+
+```python
+with model.streaming(batch_size=1):
+    first_output = model(first_chunk, message=secret_message)
+    state = model.get_streaming_state()
+
+with model.streaming(batch_size=1):
+    model.set_streaming_state(state)
+    next_output = model(next_chunk, message=secret_message)
+```
+
+The state contains both networks' history. Saving only `model.encoder.get_streaming_state()` is insufficient. Treat the returned state as owned by that stream, not as an immutable snapshot; the context, state, input batch size, and message must correspond to the same stream. Serialize access when sharing a generator between requests.
 
 
 # :brain: Train your own watermarking model
