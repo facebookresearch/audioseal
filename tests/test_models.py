@@ -14,6 +14,7 @@ import torch
 import torchaudio
 
 from audioseal import AudioSeal
+from audioseal.builder import AudioSealDetectorConfig, create_detector
 from audioseal.models import AudioSealDetector, AudioSealWM, MsgProcessor
 
 if sys.version_info >= (3, 10):
@@ -75,6 +76,28 @@ def test_loading_from_hf():
     assert isinstance(generator, AudioSealWM) and isinstance(
         detector, AudioSealDetector
     )
+
+
+def test_detector_custom_output_dim():
+    from omegaconf import OmegaConf
+
+    from audioseal.loader import load_local_model_config
+
+    cfg = OmegaConf.to_container(load_local_model_config("audioseal_detector_16bits"))
+    cfg.pop("checkpoint")
+    cfg["detector"]["output_dim"] = 64
+
+    config = AudioSeal.parse_config(cfg, AudioSealDetectorConfig)
+    detector = create_detector(config)
+
+    state = detector.state_dict()
+    assert state["detector.0.reverse_convolution.weight"].shape[1] == 64
+    assert state["detector.0.reverse_convolution.bias"].shape == (64,)
+    assert state["detector.1.weight"].shape[1] == 64
+
+    audio = torch.randn(1, 1, 16000)
+    result, _ = detector.detect_watermark(audio, sample_rate=16000)
+    assert result.shape[0] == 1
 
 
 def test_jit(example_audio, tmp_path):
