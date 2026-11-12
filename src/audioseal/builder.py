@@ -145,7 +145,7 @@ def create_detector(
     dtype: Optional[DataType] = None,
 ) -> AudioSealDetector:
 
-    _detector = {"output_dim": 32}
+    _detector = {"output_dim": config.detector.output_dim}
     detector_config = {**as_dict(config.seanet), **_detector}
 
     encoder = SEANetEncoderKeepDimension(**detector_config)
