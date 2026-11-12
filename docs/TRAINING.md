@@ -32,7 +32,7 @@ python -m voxpopuli.get_unlabelled_data --root [ROOT] --subset 400k
 
 # Run audiocraft data tool to prepare the manifest
 cd [PATH to audiocraft]
-python -m audiocraft.data.audio_dataset [ROOT] egs/voxpopuli/data.jsonl.gz
+python -m audiocraft.data.audio_dataset [ROOT]/unlabelled_data egs/voxpopuli/data.jsonl.gz
 ```
 
 Then, prepare the following datasource definition and put it inside the "[audiocraft root]/configs/dset/audio/voxpopuli.yaml":
