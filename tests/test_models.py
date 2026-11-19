@@ -320,6 +320,14 @@ def test_streaming_rejects_nested_contexts(streaming_generator):
                 pass
 
 
+@torch.no_grad()
+def test_random_message_follows_batch_size(streaming_generator):
+    frame = streaming_generator.frame_size
+    assert streaming_generator(torch.randn(4, 1, 2 * frame)).shape == (4, 1, 2 * frame)
+    assert streaming_generator(torch.randn(1, 1, 2 * frame)).shape == (1, 1, 2 * frame)
+    assert streaming_generator(torch.randn(3, 1, 2 * frame)).shape == (3, 1, 2 * frame)
+
+
 def test_non_streaming_custom_modules():
     model = AudioSealWM(torch.nn.Identity(), torch.nn.Identity())
     audio = torch.randn(1, 1, 321)

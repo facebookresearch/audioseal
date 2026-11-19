@@ -327,7 +327,7 @@ class AudioSealWM(torch.nn.Module):
 
         if self.msg_processor is not None:
             if message is None:
-                if self.message.numel() == 0:
+                if self.message.numel() == 0 or self.message.size(0) != x.shape[0]:
                     self.message = self.random_message(x.shape[0])
                 message = self.message.to(device=x.device)
 
